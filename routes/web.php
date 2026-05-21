@@ -101,7 +101,7 @@ Route::middleware('auth')->prefix('api')->group(function () {
     Route::post('campaigns/preview-split', [CampaignController::class, 'previewSplit']);
     Route::post('campaigns/{id}/follow-up', [CampaignController::class, 'sendFollowUp']);
 Route::get('campaigns/{id}/follow-up-status', [CampaignController::class, 'followUpStatus']);
-
+Route::get('/templates/check-price-var', [CampaignController::class, 'checkPriceVar']);
 });
 
 

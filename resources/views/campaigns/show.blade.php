@@ -8,7 +8,7 @@
   </div>
 </div>
 
-<!-- PRICE PROMPT MODAL -->
+<!-- PRICE PROMPT MODAL — shown when follow-up template contains {price} -->
 <div id="priceModal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40">
   <div class="bg-white rounded-2xl shadow-xl border border-gray-200 w-full max-w-md p-6">
     <h3 class="text-lg font-semibold text-gray-900 mb-1">Confirm Price for Follow Up</h3>
@@ -74,11 +74,18 @@ async function loadCampaign() {
   allEmails = c.emails;
 
   // ── Progress calculations ──
-  const sentPct      = c.total_emails > 0 ? Math.round((c.sent_count / c.total_emails) * 100) : 0;
-  const eligibleFU   = c.emails.filter(e => e.status === 'sent' && !e.has_reply && !e.is_bounced).length;
-  const fuPct        = c.sent_count > 0 ? Math.round((c.follow_up_count / c.sent_count) * 100) : 0;
-  const failed       = c.emails.filter(e => e.status === 'failed').length;
-  const pending      = c.emails.filter(e => e.status === 'pending').length;
+  const sentPct    = c.total_emails > 0 ? Math.round((c.sent_count / c.total_emails) * 100) : 0;
+  const eligibleFU = c.emails.filter(e => e.status === 'sent' && !e.has_reply && !e.is_bounced).length;
+  const failed     = c.emails.filter(e => e.status === 'failed').length;
+  const pending    = c.emails.filter(e => e.status === 'pending').length;
+
+  // ── Per-level follow-up calculations ──
+  // e.follow_up_count = how many follow-ups that prospect has already received.
+  // So follow_up_count >= N means they got level N.
+  // maxLevel = highest follow-up level sent so far across all prospects.
+  const maxLevel     = c.emails.reduce((m, e) => Math.max(m, e.follow_up_count), 0);
+  // We always show up to maxLevel + 1 so the NEXT level is visible (capped at 20).
+  const levelsToShow = Math.min(Math.max(maxLevel + 1, 1), 20);
 
   document.getElementById('campaignDetail').innerHTML = `
 
@@ -98,11 +105,11 @@ async function loadCampaign() {
 
     <!-- STAT CARDS -->
     <div class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
-      ${statBox('Total', c.total_emails, 'text-blue-600')}
-      ${statBox('Sent', c.sent_count, 'text-green-600')}
-      ${statBox('Replied', c.replied_count, 'text-purple-600')}
+      ${statBox('Total',      c.total_emails,    'text-blue-600')}
+      ${statBox('Sent',       c.sent_count,      'text-green-600')}
+      ${statBox('Replied',    c.replied_count,   'text-purple-600')}
       ${statBox('Follow-ups', c.follow_up_count, 'text-amber-600')}
-      ${statBox('Bounced', c.bounce_count, 'text-red-500')}
+      ${statBox('Bounced',    c.bounce_count,    'text-red-500')}
     </div>
 
     <!-- PROGRESS BARS -->
@@ -110,13 +117,16 @@ async function loadCampaign() {
       <h2 class="font-semibold text-gray-900 mb-5">Sending Progress</h2>
 
       <!-- Initial Emails Progress -->
-      <div class="mb-5">
+      <div class="mb-6">
         <div class="flex items-center justify-between mb-1.5">
           <div>
             <span class="text-sm font-medium text-gray-700">Initial Emails</span>
             ${pending > 0 ? `<span class="ml-2 text-xs bg-blue-50 text-blue-600 border border-blue-200 rounded-full px-2 py-0.5">${pending} queued</span>` : ''}
           </div>
-          <span class="text-sm font-semibold text-gray-900">${c.sent_count} / ${c.total_emails} <span class="text-gray-400 font-normal">(${sentPct}%)</span></span>
+          <span class="text-sm font-semibold text-gray-900">
+            ${c.sent_count} / ${c.total_emails}
+            <span class="text-gray-400 font-normal">(${sentPct}%)</span>
+          </span>
         </div>
         <div class="bg-gray-100 rounded-full h-3 overflow-hidden">
           <div class="h-3 rounded-full transition-all duration-500 ${sentPct === 100 ? 'bg-green-500' : 'bg-blue-500'}"
@@ -128,23 +138,71 @@ async function loadCampaign() {
         </div>
       </div>
 
-      <!-- Follow Up Progress -->
+      <!-- Follow Up Progress — one bar per level -->
       <div>
-        <div class="flex items-center justify-between mb-1.5">
+        <div class="flex items-center justify-between mb-4">
           <div>
             <span class="text-sm font-medium text-gray-700">Follow Ups</span>
-            <span class="ml-2 text-xs bg-gray-100 text-gray-500 border border-gray-200 rounded-full px-2 py-0.5">${eligibleFU} eligible</span>
+            <span class="ml-2 text-xs bg-gray-100 text-gray-500 border border-gray-200 rounded-full px-2 py-0.5">
+              ${eligibleFU} eligible now
+            </span>
           </div>
-          <span class="text-sm font-semibold text-gray-900">${c.follow_up_count} / ${c.sent_count} <span class="text-gray-400 font-normal">(${fuPct}%)</span></span>
+          <span class="text-sm font-semibold text-gray-900">${c.follow_up_count} total sent</span>
         </div>
-        <div class="bg-gray-100 rounded-full h-3 overflow-hidden">
-          <div class="h-3 rounded-full transition-all duration-500 ${fuPct === 100 ? 'bg-green-500' : 'bg-amber-500'}"
-               style="width: ${fuPct}%"></div>
-        </div>
-        <div class="flex items-center justify-between mt-1">
-          <p class="text-xs text-gray-400">${fuPct === 100 ? '✅ All follow ups sent' : fuPct + '% of sent prospects followed up'}</p>
-          <p class="text-xs text-gray-400">${eligibleFU} still to follow up</p>
-        </div>
+
+        ${(() => {
+          let bars = '';
+
+          for (let level = 1; level <= levelsToShow; level++) {
+            // Count prospects who have received AT LEAST this level of follow-up
+            const sentAtLevel = c.emails.filter(e => e.follow_up_count >= level).length;
+            const pct         = c.sent_count > 0 ? Math.round((sentAtLevel / c.sent_count) * 100) : 0;
+            const isComplete  = pct === 100 && sentAtLevel > 0;
+            // The next unsent level — shown faded as a preview of what's coming
+            const isNext      = level === maxLevel + 1;
+
+            bars += `
+              <div class="mb-4 ${isNext ? 'opacity-55' : ''}">
+                <div class="flex items-center justify-between mb-1.5">
+                  <div class="flex items-center gap-2">
+                    <span class="text-sm font-medium text-gray-700">Follow-up ${level}</span>
+                    ${isNext
+                      ? `<span class="text-xs bg-blue-50 text-blue-600 border border-blue-200 rounded-full px-2 py-0.5">next to send</span>`
+                      : isComplete
+                        ? `<span class="text-xs bg-green-50 text-green-700 border border-green-200 rounded-full px-2 py-0.5">complete</span>`
+                        : `<span class="text-xs bg-amber-50 text-amber-600 border border-amber-200 rounded-full px-2 py-0.5">in progress</span>`
+                    }
+                  </div>
+                  <span class="text-sm font-semibold text-gray-900">
+                    ${sentAtLevel} / ${c.sent_count}
+                    <span class="text-gray-400 font-normal">(${pct}%)</span>
+                  </span>
+                </div>
+                <div class="bg-gray-100 rounded-full h-2.5 overflow-hidden">
+                  <div class="h-2.5 rounded-full transition-all duration-500
+                              ${isComplete ? 'bg-green-500' : isNext ? 'bg-gray-300' : 'bg-amber-500'}"
+                       style="width: ${pct}%"></div>
+                </div>
+                <div class="flex items-center justify-between mt-1">
+                  <p class="text-xs text-gray-400">
+                    ${isComplete
+                      ? '✅ All prospects received this follow-up'
+                      : isNext
+                        ? `${eligibleFU} prospects eligible to receive this`
+                        : `${c.sent_count - sentAtLevel} prospects haven't received this yet`
+                    }
+                  </p>
+                  ${!isComplete && !isNext
+                    ? `<p class="text-xs text-gray-400">${pct}% reached</p>`
+                    : ''
+                  }
+                </div>
+              </div>
+            `;
+          }
+
+          return bars || `<p class="text-sm text-gray-400 py-2">No follow-ups sent yet. Click "Send Follow Up" below to start.</p>`;
+        })()}
       </div>
     </div>
 
@@ -190,12 +248,12 @@ async function loadCampaign() {
 
       <!-- FILTERS -->
       <div class="px-5 py-3 border-b border-gray-100 flex gap-2 flex-wrap">
-        ${filterBtn('all',     'All',      c.emails.length)}
-        ${filterBtn('sent',    'Sent',     c.emails.filter(e => e.status === 'sent').length)}
-        ${filterBtn('replied', 'Replied',  c.emails.filter(e => e.has_reply).length)}
-        ${filterBtn('pending', 'Pending',  c.emails.filter(e => e.status === 'pending').length)}
-        ${filterBtn('failed',  'Failed',   c.emails.filter(e => e.status === 'failed').length)}
-        ${filterBtn('bounced', 'Bounced',  c.emails.filter(e => e.is_bounced).length)}
+        ${filterBtn('all',     'All',     c.emails.length)}
+        ${filterBtn('sent',    'Sent',    c.emails.filter(e => e.status === 'sent').length)}
+        ${filterBtn('replied', 'Replied', c.emails.filter(e => e.has_reply).length)}
+        ${filterBtn('pending', 'Pending', c.emails.filter(e => e.status === 'pending').length)}
+        ${filterBtn('failed',  'Failed',  c.emails.filter(e => e.status === 'failed').length)}
+        ${filterBtn('bounced', 'Bounced', c.emails.filter(e => e.is_bounced).length)}
       </div>
 
       <div class="overflow-x-auto">
@@ -220,34 +278,34 @@ async function loadCampaign() {
   `;
 }
 
-// ── Follow up handler — checks if price needed ────────────────
+// ── Follow up handler — checks if price confirmation needed first ──
 async function handleFollowUp() {
   const eligible = allEmails.filter(e => e.status === 'sent' && !e.has_reply && !e.is_bounced).length;
   if (eligible === 0) { toast('No eligible prospects', 'All have replied or bounced', 'info'); return; }
 
-  // First check follow up status to see if price needed
+  // Ask the backend: does the next follow-up template contain {price}?
   const status = await apiGet(`/api/campaigns/${CAMPAIGN_ID}/follow-up-status`);
 
   if (status.needs_price) {
-    // Show price modal
+    // Template has {price} — show the price confirmation modal pre-filled with campaign default
     document.getElementById('defaultPriceLabel').textContent = status.campaign_price || 'not set';
     document.getElementById('priceInput').value              = status.campaign_price || '';
     document.getElementById('priceModal').classList.remove('hidden');
     return;
   }
 
-  // No price needed — send directly
+  // No {price} in template — send directly without asking
   await submitFollowUp(null);
 }
 
-// ── Called when user confirms price in modal ──────────────────
+// ── Called when user clicks "Send Follow Up" inside the price modal ──
 async function confirmFollowUpPrice() {
   const price = document.getElementById('priceInput').value.trim();
   document.getElementById('priceModal').classList.add('hidden');
   await submitFollowUp(price);
 }
 
-// ── Actually submit the follow up ────────────────────────────
+// ── Actually POST the follow-up to the backend ──
 async function submitFollowUp(price) {
   if (!confirm(`Send follow up to eligible prospects?`)) return;
 
@@ -265,7 +323,7 @@ async function submitFollowUp(price) {
     toast('Follow up queued! 🎉', res.message, 'success');
     loadCampaign();
   } else if (res.needs_price) {
-    // Shouldn't happen but handle it
+    // Safety net — backend still says price needed, show modal again
     document.getElementById('defaultPriceLabel').textContent = res.campaign_price || 'not set';
     document.getElementById('priceInput').value              = res.campaign_price || '';
     document.getElementById('priceModal').classList.remove('hidden');

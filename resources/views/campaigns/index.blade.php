@@ -42,8 +42,16 @@
           <input type="text" id="campDomain" placeholder="LagosBusiness.com"
                  class="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-200">
         </div>
-        <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">Price *</label>
+
+        {{-- Price field: shown only if at least one bulk_template uses {price} --}}
+        {{-- showModal() checks the API and toggles this wrapper --}}
+        <div id="campPriceWrapper" class="hidden">
+          <label class="block text-sm font-medium text-gray-700 mb-1">
+            Price *
+            <span class="ml-1 text-xs font-normal text-amber-600 bg-amber-50 border border-amber-200 rounded-full px-2 py-0.5">
+              required by template
+            </span>
+          </label>
           <input type="text" id="campPrice" placeholder="$2,499"
                  class="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-200">
         </div>
@@ -115,6 +123,28 @@ document.addEventListener('DOMContentLoaded', () => {
   loadAccountCheckboxes();
 });
 
+// ── Show modal — checks templates first to decide if price field is needed ──
+async function showModal() {
+  document.getElementById('createModal').classList.remove('hidden');
+
+  // Hit the API to check if any active bulk_template contains {price}
+  // If yes → show price input. If no → keep it hidden (no point asking).
+  const res          = await apiGet('/api/templates/check-price-var?type=bulk_template');
+  const priceWrapper = document.getElementById('campPriceWrapper');
+
+  if (res.has_price_var) {
+    // At least one template needs {price} — reveal the price input field
+    priceWrapper.classList.remove('hidden');
+  } else {
+    // No template uses {price} — hide the field and clear any leftover value
+    priceWrapper.classList.add('hidden');
+    document.getElementById('campPrice').value = '';
+  }
+}
+
+function hideModal() { document.getElementById('createModal').classList.add('hidden'); }
+
+// ── Paste handler — auto-cleans pasted emails ──
 function handlePaste(event) {
   event.preventDefault();
   const pasted = (event.clipboardData || window.clipboardData).getData('text');
@@ -124,6 +154,7 @@ function handlePaste(event) {
   cleanRecipients();
 }
 
+// ── Cleans the recipient textarea: removes dupes, invalid emails ──
 function cleanRecipients() {
   const raw    = document.getElementById('campRecipients').value;
   const tokens = raw.split(/[\n\r,;|\s\t]+/);
@@ -146,7 +177,7 @@ function cleanRecipients() {
   document.getElementById('campRecipients').value = valid.join('\n');
   const countEl = document.getElementById('recipientCount');
   countEl.textContent = `${valid.length} emails`;
-  countEl.className = `text-xs font-semibold rounded-full px-2.5 py-0.5 ${valid.length > 0 ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-600'}`;
+  countEl.className   = `text-xs font-semibold rounded-full px-2.5 py-0.5 ${valid.length > 0 ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-600'}`;
 
   const parts = [`✅ ${valid.length} valid`];
   if (dupes > 0)   parts.push(`${dupes} duplicates removed`);
@@ -160,10 +191,10 @@ function cleanRecipients() {
 function countRecipients() {
   const val  = document.getElementById('campRecipients').value;
   const list = val.split(/\n/).map(e => e.trim()).filter(e => e.includes('@'));
-  const el   = document.getElementById('recipientCount');
-  el.textContent = `${list.length} emails`;
+  document.getElementById('recipientCount').textContent = `${list.length} emails`;
 }
 
+// ── Load campaigns list ──
 async function loadCampaigns() {
   const res = await apiGet('/api/campaigns');
   const el  = document.getElementById('campaignsList');
@@ -232,6 +263,7 @@ function statusBadge(status) {
   return `<span class="text-xs border rounded-full px-2.5 py-0.5 font-semibold ${map[status] || 'bg-gray-100 text-gray-600 border-gray-200'}">${status}</span>`;
 }
 
+// ── Load Gmail account checkboxes ──
 async function loadAccountCheckboxes() {
   const res   = await apiGet('/api/gmail-accounts');
   allAccounts = res.accounts || [];
@@ -309,6 +341,7 @@ async function previewSplit() {
   }
 }
 
+// ── Create campaign — price only required if price field is visible ──
 async function createCampaign() {
   const name       = document.getElementById('campName').value.trim();
   const domain     = document.getElementById('campDomain').value.trim();
@@ -317,7 +350,11 @@ async function createCampaign() {
   const recipients = document.getElementById('campRecipients').value;
   const accounts   = getSelectedAccounts();
 
-  if (!name || !domain || !price || !yourName || !recipients) {
+  // Price is only required when the price field is actually visible
+  // (i.e. at least one bulk_template uses {price})
+  const priceRequired = !document.getElementById('campPriceWrapper').classList.contains('hidden');
+
+  if (!name || !domain || !yourName || !recipients || (priceRequired && !price)) {
     toast('Error', 'Please fill all required fields', 'error'); return;
   }
   if (!accounts.length) {
@@ -351,8 +388,5 @@ async function deleteCampaign(id) {
   const res = await apiDelete(`/api/campaigns/${id}`);
   if (res.success) { toast('Deleted', 'Campaign deleted', 'success'); loadCampaigns(); }
 }
-
-function showModal() { document.getElementById('createModal').classList.remove('hidden'); }
-function hideModal()  { document.getElementById('createModal').classList.add('hidden'); }
 </script>
 @endsection

@@ -348,6 +348,27 @@ class CampaignController extends Controller
         'level'   => $nextLevel,
     ]);
 }
+
+public function checkPriceVar(Request $request)
+    {
+        $type = $request->input('type', 'bulk_template');
+
+        // Search both subject and body templates for the {price} placeholder
+        $hasPriceVar = EmailTemplate::where('user_id', Auth::id())
+            ->where('type', $type)
+            ->where('is_active', true)
+            ->where(function ($q) {
+                $q->where('body_template', 'like', '%{price}%')
+                  ->orWhere('subject_template', 'like', '%{price}%');
+            })
+            ->exists();
+
+        return response()->json([
+            'success'       => true,
+            'has_price_var' => $hasPriceVar,
+            'type'          => $type,
+        ]);
+    }
  
 // Also add this helper endpoint to check follow up status
 public function followUpStatus($id)
