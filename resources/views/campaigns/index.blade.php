@@ -181,18 +181,9 @@ async function loadCampaigns() {
     return;
   }
 
-// Replace the campaign card rendering inside loadCampaigns() in your campaigns.blade.php
-// Find the el.innerHTML = res.campaigns.map(c => ` section and replace with this:
-
-el.innerHTML = res.campaigns.map(c => {
-  const sentPct = c.total_emails > 0 ? Math.round((c.sent_count / c.total_emails) * 100) : 0;
-  const fuPct   = c.sent_count   > 0 ? Math.round((c.follow_up_count / c.sent_count) * 100) : 0;
-
-  return `
+  el.innerHTML = res.campaigns.map(c => `
     <div class="bg-white border border-gray-200 rounded-xl p-5 mb-4 hover:border-blue-300 transition cursor-pointer"
          onclick="window.location='/campaigns/${c.id}'">
-
-      <!-- HEADER -->
       <div class="flex items-start justify-between mb-4">
         <div>
           <h3 class="font-semibold text-gray-900 text-base">${c.name}</h3>
@@ -207,8 +198,7 @@ el.innerHTML = res.campaigns.map(c => {
         </div>
       </div>
 
-      <!-- STAT BOXES -->
-      <div class="grid grid-cols-2 md:grid-cols-5 gap-3 mb-4">
+      <div class="grid grid-cols-2 md:grid-cols-5 gap-3">
         ${statBox('Total',      c.total_emails,    'text-blue-600')}
         ${statBox('Sent',       c.sent_count,      'text-green-600')}
         ${statBox('Replied',    c.replied_count,   'text-purple-600')}
@@ -216,44 +206,14 @@ el.innerHTML = res.campaigns.map(c => {
         ${statBox('Bounced',    c.bounce_count,    'text-red-500')}
       </div>
 
-      <!-- PROGRESS BARS -->
-      <div class="space-y-3">
-
-        <!-- Initial email progress -->
-        <div>
-          <div class="flex items-center justify-between mb-1">
-            <span class="text-xs font-medium text-gray-600">Initial emails</span>
-            <span class="text-xs text-gray-500">${c.sent_count}/${c.total_emails} · ${sentPct}%</span>
-          </div>
-          <div class="bg-gray-100 rounded-full h-2 overflow-hidden">
-            <div class="h-2 rounded-full transition-all ${sentPct === 100 ? 'bg-green-500' : 'bg-blue-500'}"
-                 style="width: ${sentPct}%"></div>
-          </div>
-        </div>
-
-        <!-- Follow up progress -->
-        <div>
-          <div class="flex items-center justify-between mb-1">
-            <span class="text-xs font-medium text-gray-600">Follow ups</span>
-            <span class="text-xs text-gray-500">${c.follow_up_count}/${c.sent_count} · ${fuPct}%</span>
-          </div>
-          <div class="bg-gray-100 rounded-full h-2 overflow-hidden">
-            <div class="h-2 rounded-full transition-all ${fuPct === 100 ? 'bg-green-500' : 'bg-amber-500'}"
-                 style="width: ${fuPct}%"></div>
-          </div>
-        </div>
-
-      </div>
-
       ${c.pending_count > 0 ? `
         <div class="mt-3 flex items-center gap-2 text-sm text-blue-700 bg-blue-50 rounded-lg px-3 py-2 border border-blue-200">
           <div class="spinner"></div>
           ${c.pending_count} emails queued and sending
-        </div>` : ''
-      }
+        </div>` : ''}
     </div>
-  `;
-}).join('');
+  `).join('');
+}
 
 function statBox(label, value, color) {
   return `
