@@ -107,5 +107,5 @@ Route::get('campaigns/{id}/follow-up-status', [CampaignController::class, 'follo
 
 Route::prefix('internal')->group(function () {
     Route::get('send-initial', [EmailDispatchController::class, 'sendInitial']);
-    Route::get('send-follow-up', [EmailDispatchController::class, 'sendFollowUp']);
+    Route::get('send-followup', [EmailDispatchController::class, 'sendFollowUp']);
 });
