@@ -249,7 +249,7 @@ class CampaignController extends Controller
                     'status'           => 'pending',
                 ]);
 
-                $delay += rand(1, 2); // 1-2 min per account independently
+                $delay += rand(2, 4); // 1-2 min per account independently
                 ObanService::insertEmailJob($campaignEmail->id, $delay);
                 $jobsCreated++;
             }
@@ -336,7 +336,7 @@ class CampaignController extends Controller
             $email->update(['body' => str_replace('{price}', $price, $tpl->body_template)]);
         }
  
-        $delay += rand(1, 2);
+        $delay += rand(1, 3);
         ObanService::insertFollowUpJob($email->id, $delay);
         $queued++;
     }
