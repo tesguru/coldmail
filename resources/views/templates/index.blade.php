@@ -129,6 +129,7 @@
 <script>
 let currentType       = 'bulk_template';
 let editingTemplateId = null;
+let templatesCache    = {};  // ✅ stores templates by id — fixes broken Edit onclick
 
 const samples = {
   initial: {
@@ -178,6 +179,10 @@ async function loadTemplates(type) {
   const el  = document.getElementById('templatesList');
   const cnt = res.templates?.length || 0;
 
+  // ✅ cache all templates by id for safe retrieval in editTemplate()
+  templatesCache = {};
+  res.templates?.forEach(t => templatesCache[t.id] = t);
+
   const countEl = document.getElementById('templateCount');
   countEl.textContent = `${cnt}/6`;
   countEl.className = cnt >= 6
@@ -194,39 +199,35 @@ async function loadTemplates(type) {
     return;
   }
 
-  el.innerHTML = res.templates.map((t, i) => {
-    const safeBody    = t.body_template.replace(/\\/g, '\\\\').replace(/`/g, '\\`').replace(/\$/g, '\\$');
-    const safeName    = t.name.replace(/`/g, '\\`');
-    const safeSubject = t.subject_template.replace(/`/g, '\\`');
-
-    return `
-      <div class="bg-white border border-gray-200 rounded-xl p-4 mb-3">
-        <div class="flex items-start justify-between mb-3">
-          <div class="flex items-center gap-2">
-            <span class="text-xs font-bold bg-blue-50 text-blue-700 border border-blue-200 rounded-full px-2 py-0.5">#${i+1}</span>
-            <p class="font-semibold text-gray-900 text-sm">${t.name}</p>
-          </div>
-          <div class="flex gap-2">
-            <button onclick="editTemplate(${t.id}, \`${safeName}\`, \`${t.type}\`, \`${safeSubject}\`, \`${safeBody}\`)"
-                    class="text-xs px-2.5 py-1.5 rounded-lg bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100 font-medium">
-              Edit
-            </button>
-            <button onclick="deleteTemplate(${t.id})"
-                    class="text-xs px-2.5 py-1.5 rounded-lg bg-red-50 text-red-600 border border-red-200 hover:bg-red-100 font-medium">
-              Delete
-            </button>
-          </div>
+  // ✅ only pass the id — no more inline multiline strings that break onclick
+  el.innerHTML = res.templates.map((t, i) => `
+    <div class="bg-white border border-gray-200 rounded-xl p-4 mb-3">
+      <div class="flex items-start justify-between mb-3">
+        <div class="flex items-center gap-2">
+          <span class="text-xs font-bold bg-blue-50 text-blue-700 border border-blue-200 rounded-full px-2 py-0.5">#${i+1}</span>
+          <p class="font-semibold text-gray-900 text-sm">${t.name}</p>
         </div>
-        <div class="bg-gray-50 rounded-lg p-2.5 mb-2 border border-gray-100">
-          <p class="text-xs text-gray-400 mb-0.5 font-medium">Subject:</p>
-          <p class="text-sm text-gray-700">${t.subject_template}</p>
+        <div class="flex gap-2">
+          <button onclick="editTemplate(${t.id})"
+                  class="text-xs px-2.5 py-1.5 rounded-lg bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100 font-medium">
+            Edit
+          </button>
+          <button onclick="deleteTemplate(${t.id})"
+                  class="text-xs px-2.5 py-1.5 rounded-lg bg-red-50 text-red-600 border border-red-200 hover:bg-red-100 font-medium">
+            Delete
+          </button>
         </div>
-        <div class="bg-gray-50 rounded-lg p-2.5 border border-gray-100">
-          <p class="text-xs text-gray-400 mb-0.5 font-medium">Preview:</p>
-          <p class="text-xs text-gray-500 font-mono whitespace-pre-wrap">${t.body_template.substring(0, 120)}${t.body_template.length > 120 ? '...' : ''}</p>
-        </div>
-      </div>`;
-  }).join('');
+      </div>
+      <div class="bg-gray-50 rounded-lg p-2.5 mb-2 border border-gray-100">
+        <p class="text-xs text-gray-400 mb-0.5 font-medium">Subject:</p>
+        <p class="text-sm text-gray-700">${t.subject_template}</p>
+      </div>
+      <div class="bg-gray-50 rounded-lg p-2.5 border border-gray-100">
+        <p class="text-xs text-gray-400 mb-0.5 font-medium">Preview:</p>
+        <p class="text-xs text-gray-500 font-mono whitespace-pre-wrap">${t.body_template.substring(0, 120)}${t.body_template.length > 120 ? '...' : ''}</p>
+      </div>
+    </div>`
+  ).join('');
 }
 
 function insertVar(variable) {
@@ -245,12 +246,16 @@ function insertSubjectVar(variable) {
   el.focus();
 }
 
-function editTemplate(id, name, type, subject, body) {
+// ✅ fixed: reads from cache instead of broken inline onclick parameters
+function editTemplate(id) {
+  const t = templatesCache[id];
+  if (!t) return;
+
   editingTemplateId = id;
-  document.getElementById('tplName').value    = name;
-  document.getElementById('tplType').value    = type;
-  document.getElementById('tplSubject').value = subject;
-  document.getElementById('tplBody').value    = body;
+  document.getElementById('tplName').value    = t.name;
+  document.getElementById('tplType').value    = t.type;
+  document.getElementById('tplSubject').value = t.subject_template;
+  document.getElementById('tplBody').value    = t.body_template;
   document.getElementById('formTitle').textContent = 'Edit Template';
   document.getElementById('cancelEditBtn').classList.remove('hidden');
   const btn = document.getElementById('saveBtn');
