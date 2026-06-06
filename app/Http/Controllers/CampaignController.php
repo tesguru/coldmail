@@ -28,6 +28,8 @@ class CampaignController extends Controller
                     'id'              => $campaign->id,
                     'name'            => $campaign->name,
                     'domain'          => $campaign->domain,
+                    'facebook_links'  => $campaign->facebook_links ?? [],  // ← NEW
+                    'website_links'   => $campaign->website_links  ?? [],  // ← NEW
                     'price'           => $campaign->price,
                     'your_name'       => $campaign->your_name,
                     'label_name'      => $campaign->label_name,
@@ -83,6 +85,8 @@ class CampaignController extends Controller
                 'id'              => $campaign->id,
                 'name'            => $campaign->name,
                 'domain'          => $campaign->domain,
+                'facebook_links'  => $campaign->facebook_links ?? [],  // ← NEW
+                'website_links'   => $campaign->website_links  ?? [],  // ← NEW
                 'price'           => $campaign->price,
                 'your_name'       => $campaign->your_name,
                 'label_name'      => $campaign->label_name,
@@ -113,6 +117,10 @@ class CampaignController extends Controller
             'gmail_accounts.*' => 'exists:gmail_accounts,id',
             'split_mode'       => 'required|in:equal,custom',
             'custom_splits'    => 'nullable|array',
+            'facebook_links'   => 'nullable|array',   // ← NEW
+            'facebook_links.*' => 'url',               // ← NEW: each entry must be a valid URL
+            'website_links'    => 'nullable|array',   // ← NEW
+            'website_links.*'  => 'url',               // ← NEW
         ]);
 
         // Check duplicate name
@@ -188,11 +196,13 @@ class CampaignController extends Controller
             Log::warning('Label creation failed', ['error' => $e->getMessage()]);
         }
 
-        // Create campaign
+        // Create campaign — includes facebook_links and website_links
         $campaign = Campaign::create([
             'user_id'        => Auth::id(),
             'name'           => $request->name,
             'domain'         => $request->domain,
+            'facebook_links' => $request->facebook_links ?? [],  // ← NEW
+            'website_links'  => $request->website_links  ?? [],  // ← NEW
             'price'          => $request->price,
             'your_name'      => $request->your_name,
             'label_name'     => $labelName,
@@ -213,7 +223,7 @@ class CampaignController extends Controller
 
         foreach ($splits as $accountId => $accountRecipients) {
             $account = $accounts->firstWhere('id', $accountId);
-            $delay   = 0; // Each account has its own delay — runs in parallel
+            $delay   = 0;
 
             foreach ($accountRecipients as $recipientEmail) {
                 $template = EmailTemplate::getRandomByType(
@@ -249,7 +259,7 @@ class CampaignController extends Controller
                     'status'           => 'pending',
                 ]);
 
-                $delay += rand(2, 4); // 1-2 min per account independently
+                $delay += rand(2, 4);
                 ObanService::insertEmailJob($campaignEmail->id, $delay);
                 $jobsCreated++;
             }
@@ -268,92 +278,84 @@ class CampaignController extends Controller
         ]);
     }
 
-  
-   public function sendFollowUp(Request $request, $id)
-{
-    $campaign = Campaign::where('user_id', Auth::id())->findOrFail($id);
- 
-    // Get all eligible emails
-    $emails = CampaignEmail::where('campaign_id', $campaign->id)
-        ->where('status', 'sent')
-        ->where('has_reply', false)
-        ->where('is_bounced', false)
-        ->get();
- 
-    if ($emails->isEmpty()) {
-        return response()->json([
-            'success' => false,
-            'error'   => 'No eligible prospects for follow up.',
-        ]);
-    }
- 
-    // Check what follow up level we're sending
-    // Use the most common follow_up_count + 1
-    $nextLevel = ($emails->first()->follow_up_count ?? 0) + 1;
- 
-    // Get template for this level
-    $template = EmailTemplate::getForFollowUpLevel(Auth::id(), $nextLevel);
- 
-    if (!$template) {
-        return response()->json([
-            'success' => false,
-            'error'   => "No follow up template found for level {$nextLevel}. Please create a followup_{$nextLevel} template first.",
-        ]);
-    }
- 
-    // Check if template has {price} variable
-    $hasPriceVar = str_contains($template->body_template, '{price}') ||
-                   str_contains($template->subject_template, '{price}');
- 
-    // If template has {price} and no price provided in request — return prompt signal
-    if ($hasPriceVar && !$request->has('price')) {
-        return response()->json([
-            'success'       => false,
-            'needs_price'   => true,
-            'campaign_price'=> $campaign->price,
-            'message'       => 'This follow up template contains {price}. Please confirm the price.',
-            'eligible'      => $emails->count(),
-            'level'         => $nextLevel,
-        ]);
-    }
- 
-    // Use provided price or fall back to campaign price
-    $price = $request->input('price', $campaign->price);
- 
-    // Queue follow up jobs
-    $queued = 0;
-    $delay  = 0;
- 
-    foreach ($emails as $email) {
-        $followUpLevel = $email->follow_up_count + 1;
-        $tpl           = EmailTemplate::getForFollowUpLevel(Auth::id(), $followUpLevel);
- 
-        if (!$tpl) continue;
- 
-        // Update email body with new price if different
-        if ($hasPriceVar && $price !== $campaign->price) {
-            // Store override price on the email for the worker to use
-            $email->update(['body' => str_replace('{price}', $price, $tpl->body_template)]);
-        }
- 
-        $delay += rand(1, 3);
-        ObanService::insertFollowUpJob($email->id, $delay);
-        $queued++;
-    }
- 
-    return response()->json([
-        'success' => true,
-        'message' => "{$queued} follow up emails queued for level {$nextLevel}.",
-        'queued'  => $queued,
-        'level'   => $nextLevel,
-    ]);
-}
+    // ============================================================
+    // SEND FOLLOW UP
+    // ============================================================
+    public function sendFollowUp(Request $request, $id)
+    {
+        $campaign = Campaign::where('user_id', Auth::id())->findOrFail($id);
 
-public function checkPriceVar(Request $request)
+        $emails = CampaignEmail::where('campaign_id', $campaign->id)
+            ->where('status', 'sent')
+            ->where('has_reply', false)
+            ->where('is_bounced', false)
+            ->get();
+
+        if ($emails->isEmpty()) {
+            return response()->json([
+                'success' => false,
+                'error'   => 'No eligible prospects for follow up.',
+            ]);
+        }
+
+        $nextLevel = ($emails->first()->follow_up_count ?? 0) + 1;
+        $template  = EmailTemplate::getForFollowUpLevel(Auth::id(), $nextLevel);
+
+        if (!$template) {
+            return response()->json([
+                'success' => false,
+                'error'   => "No follow up template found for level {$nextLevel}. Please create a followup_{$nextLevel} template first.",
+            ]);
+        }
+
+        $hasPriceVar = str_contains($template->body_template, '{price}') ||
+                       str_contains($template->subject_template, '{price}');
+
+        if ($hasPriceVar && !$request->has('price')) {
+            return response()->json([
+                'success'        => false,
+                'needs_price'    => true,
+                'campaign_price' => $campaign->price,
+                'message'        => 'This follow up template contains {price}. Please confirm the price.',
+                'eligible'       => $emails->count(),
+                'level'          => $nextLevel,
+            ]);
+        }
+
+        $price  = $request->input('price', $campaign->price);
+        $queued = 0;
+        $delay  = 0;
+
+        foreach ($emails as $email) {
+            $followUpLevel = $email->follow_up_count + 1;
+            $tpl           = EmailTemplate::getForFollowUpLevel(Auth::id(), $followUpLevel);
+
+            if (!$tpl) continue;
+
+            if ($hasPriceVar && $price !== $campaign->price) {
+                $email->update(['body' => str_replace('{price}', $price, $tpl->body_template)]);
+            }
+
+            $delay += rand(1, 3);
+            ObanService::insertFollowUpJob($email->id, $delay);
+            $queued++;
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => "{$queued} follow up emails queued for level {$nextLevel}.",
+            'queued'  => $queued,
+            'level'   => $nextLevel,
+        ]);
+    }
+
+    // ============================================================
+    // CHECK PRICE VAR
+    // ============================================================
+    public function checkPriceVar(Request $request)
     {
         $type = $request->input('type', 'bulk_template');
 
-        // Search both subject and body templates for the {price} placeholder
         $hasPriceVar = EmailTemplate::where('user_id', Auth::id())
             ->where('type', $type)
             ->where('is_active', true)
@@ -369,40 +371,39 @@ public function checkPriceVar(Request $request)
             'type'          => $type,
         ]);
     }
- 
-// Also add this helper endpoint to check follow up status
-public function followUpStatus($id)
-{
-    $campaign = Campaign::where('user_id', Auth::id())->findOrFail($id);
- 
-    $eligible = CampaignEmail::where('campaign_id', $campaign->id)
-        ->where('status', 'sent')
-        ->where('has_reply', false)
-        ->where('is_bounced', false)
-        ->count();
- 
-    // Get next follow up level
-    $firstEmail = CampaignEmail::where('campaign_id', $campaign->id)
-        ->where('status', 'sent')
-        ->first();
- 
-    $nextLevel = $firstEmail ? ($firstEmail->follow_up_count + 1) : 1;
- 
-    // Check if template has price
-    $template    = EmailTemplate::getForFollowUpLevel(Auth::id(), $nextLevel);
-    $hasPriceVar = $template
-        ? (str_contains($template->body_template, '{price}') || str_contains($template->subject_template, '{price}'))
-        : false;
- 
-    return response()->json([
-        'success'       => true,
-        'eligible'      => $eligible,
-        'next_level'    => $nextLevel,
-        'has_template'  => (bool) $template,
-        'needs_price'   => $hasPriceVar,
-        'campaign_price'=> $campaign->price,
-    ]);
-}
+
+    // ============================================================
+    // FOLLOW UP STATUS
+    // ============================================================
+    public function followUpStatus($id)
+    {
+        $campaign = Campaign::where('user_id', Auth::id())->findOrFail($id);
+
+        $eligible = CampaignEmail::where('campaign_id', $campaign->id)
+            ->where('status', 'sent')
+            ->where('has_reply', false)
+            ->where('is_bounced', false)
+            ->count();
+
+        $firstEmail = CampaignEmail::where('campaign_id', $campaign->id)
+            ->where('status', 'sent')
+            ->first();
+
+        $nextLevel   = $firstEmail ? ($firstEmail->follow_up_count + 1) : 1;
+        $template    = EmailTemplate::getForFollowUpLevel(Auth::id(), $nextLevel);
+        $hasPriceVar = $template
+            ? (str_contains($template->body_template, '{price}') || str_contains($template->subject_template, '{price}'))
+            : false;
+
+        return response()->json([
+            'success'        => true,
+            'eligible'       => $eligible,
+            'next_level'     => $nextLevel,
+            'has_template'   => (bool) $template,
+            'needs_price'    => $hasPriceVar,
+            'campaign_price' => $campaign->price,
+        ]);
+    }
 
     // ============================================================
     // RETRY FAILED EMAILS

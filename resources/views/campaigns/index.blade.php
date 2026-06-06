@@ -43,8 +43,6 @@
                  class="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-200">
         </div>
 
-        {{-- Price field: shown only if at least one bulk_template uses {price} --}}
-        {{-- showModal() checks the API and toggles this wrapper --}}
         <div id="campPriceWrapper" class="hidden">
           <label class="block text-sm font-medium text-gray-700 mb-1">
             Price *
@@ -61,6 +59,42 @@
         <label class="block text-sm font-medium text-gray-700 mb-1">Your Name *</label>
         <input type="text" id="campYourName" placeholder="e.g. Emeka"
                class="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-200">
+      </div>
+
+      <!-- ── FACEBOOK PAGES — add as many as you want ── -->
+      <div>
+        <div class="flex items-center justify-between mb-2">
+          <div>
+            <label class="block text-sm font-medium text-gray-700">Facebook Pages</label>
+            <p class="text-xs text-gray-400">Optional — for manual outreach when no email</p>
+          </div>
+          <button type="button" onclick="addLink('facebook')"
+                  class="text-xs font-semibold text-blue-600 bg-blue-50 border border-blue-200 rounded-full px-3 py-1 hover:bg-blue-100 transition">
+            + Add Page
+          </button>
+        </div>
+        <div id="facebookLinks" class="space-y-2">
+          <!-- rows injected here by addLink() -->
+        </div>
+        <p id="facebookEmpty" class="text-xs text-gray-400 italic py-1">No Facebook pages added yet</p>
+      </div>
+
+      <!-- ── WEBSITES — add as many as you want ── -->
+      <div>
+        <div class="flex items-center justify-between mb-2">
+          <div>
+            <label class="block text-sm font-medium text-gray-700">Websites / Contact Forms</label>
+            <p class="text-xs text-gray-400">Optional — visit contact form if no email reply</p>
+          </div>
+          <button type="button" onclick="addLink('website')"
+                  class="text-xs font-semibold text-gray-600 bg-gray-100 border border-gray-200 rounded-full px-3 py-1 hover:bg-gray-200 transition">
+            + Add Website
+          </button>
+        </div>
+        <div id="websiteLinks" class="space-y-2">
+          <!-- rows injected here by addLink() -->
+        </div>
+        <p id="websiteEmpty" class="text-xs text-gray-400 italic py-1">No websites added yet</p>
       </div>
 
       <div>
@@ -123,28 +157,82 @@ document.addEventListener('DOMContentLoaded', () => {
   loadAccountCheckboxes();
 });
 
-// ── Show modal — checks templates first to decide if price field is needed ──
+// ── Show modal ──
 async function showModal() {
   document.getElementById('createModal').classList.remove('hidden');
 
-  // Hit the API to check if any active bulk_template contains {price}
-  // If yes → show price input. If no → keep it hidden (no point asking).
   const res          = await apiGet('/api/templates/check-price-var?type=bulk_template');
   const priceWrapper = document.getElementById('campPriceWrapper');
 
   if (res.has_price_var) {
-    // At least one template needs {price} — reveal the price input field
     priceWrapper.classList.remove('hidden');
   } else {
-    // No template uses {price} — hide the field and clear any leftover value
     priceWrapper.classList.add('hidden');
     document.getElementById('campPrice').value = '';
   }
 }
 
-function hideModal() { document.getElementById('createModal').classList.add('hidden'); }
+// ── Hide modal and reset everything ──
+function hideModal() {
+  document.getElementById('createModal').classList.add('hidden');
+  // Clear link rows
+  document.getElementById('facebookLinks').innerHTML = '';
+  document.getElementById('websiteLinks').innerHTML  = '';
+  document.getElementById('facebookEmpty').style.display = '';
+  document.getElementById('websiteEmpty').style.display  = '';
+}
 
-// ── Paste handler — auto-cleans pasted emails ──
+// ── Add a link row dynamically ──
+function addLink(type) {
+  const container  = document.getElementById(type === 'facebook' ? 'facebookLinks' : 'websiteLinks');
+  const emptyLabel = document.getElementById(type === 'facebook' ? 'facebookEmpty' : 'websiteEmpty');
+  const id         = 'link-' + Date.now() + '-' + Math.random().toString(36).slice(2);
+  const icon       = type === 'facebook' ? '📘' : '🌐';
+  const placeholder = type === 'facebook'
+    ? 'https://facebook.com/businesspage'
+    : 'https://theirbusiness.com/contact';
+
+  // Hide the "none added yet" label
+  emptyLabel.style.display = 'none';
+
+  const row       = document.createElement('div');
+  row.id          = id;
+  row.className   = 'flex items-center gap-2';
+  row.innerHTML   = `
+    <span class="text-lg flex-shrink-0">${icon}</span>
+    <input type="url"
+           placeholder="${placeholder}"
+           data-link-type="${type}"
+           class="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-200">
+    <button type="button" onclick="removeLink('${id}', '${type}')"
+            class="text-gray-400 hover:text-red-500 transition text-xl leading-none font-bold flex-shrink-0">
+      ×
+    </button>
+  `;
+  container.appendChild(row);
+}
+
+// ── Remove a link row ──
+function removeLink(rowId, type) {
+  const row = document.getElementById(rowId);
+  if (row) row.remove();
+
+  // If no more rows, show the empty label again
+  const container  = document.getElementById(type === 'facebook' ? 'facebookLinks' : 'websiteLinks');
+  const emptyLabel = document.getElementById(type === 'facebook' ? 'facebookEmpty' : 'websiteEmpty');
+  if (container.children.length === 0) {
+    emptyLabel.style.display = '';
+  }
+}
+
+// ── Collect all link values for a type ──
+function getLinks(type) {
+  return [...document.querySelectorAll(`input[data-link-type="${type}"]`)]
+    .map(i => i.value.trim())
+    .filter(v => v !== '');
+}
+
+// ── Paste handler ──
 function handlePaste(event) {
   event.preventDefault();
   const pasted = (event.clipboardData || window.clipboardData).getData('text');
@@ -154,7 +242,6 @@ function handlePaste(event) {
   cleanRecipients();
 }
 
-// ── Cleans the recipient textarea: removes dupes, invalid emails ──
 function cleanRecipients() {
   const raw    = document.getElementById('campRecipients').value;
   const tokens = raw.split(/[\n\r,;|\s\t]+/);
@@ -341,17 +428,17 @@ async function previewSplit() {
   }
 }
 
-// ── Create campaign — price only required if price field is visible ──
+// ── Create campaign ──
 async function createCampaign() {
-  const name       = document.getElementById('campName').value.trim();
-  const domain     = document.getElementById('campDomain').value.trim();
-  const price      = document.getElementById('campPrice').value.trim();
-  const yourName   = document.getElementById('campYourName').value.trim();
-  const recipients = document.getElementById('campRecipients').value;
-  const accounts   = getSelectedAccounts();
+  const name         = document.getElementById('campName').value.trim();
+  const domain       = document.getElementById('campDomain').value.trim();
+  const price        = document.getElementById('campPrice').value.trim();
+  const yourName     = document.getElementById('campYourName').value.trim();
+  const recipients   = document.getElementById('campRecipients').value;
+  const accounts     = getSelectedAccounts();
+  const facebookLinks = getLinks('facebook');  // ← collect all Facebook URLs
+  const websiteLinks  = getLinks('website');   // ← collect all Website URLs
 
-  // Price is only required when the price field is actually visible
-  // (i.e. at least one bulk_template uses {price})
   const priceRequired = !document.getElementById('campPriceWrapper').classList.contains('hidden');
 
   if (!name || !domain || !yourName || !recipients || (priceRequired && !price)) {
@@ -366,9 +453,16 @@ async function createCampaign() {
   btn.disabled    = true;
 
   const res = await apiPost('/api/campaigns', {
-    name, domain, price, your_name: yourName,
-    recipients, gmail_accounts: accounts,
-    split_mode: splitMode, custom_splits: {},
+    name,
+    domain,
+    price,
+    your_name:       yourName,
+    facebook_links:  facebookLinks,  // ← sent to backend
+    website_links:   websiteLinks,   // ← sent to backend
+    recipients,
+    gmail_accounts:  accounts,
+    split_mode:      splitMode,
+    custom_splits:   {},
   });
 
   btn.textContent = 'Create Campaign & Start Sending';

@@ -8,7 +8,7 @@
   </div>
 </div>
 
-<!-- PRICE PROMPT MODAL — shown when follow-up template contains {price} -->
+<!-- PRICE PROMPT MODAL -->
 <div id="priceModal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40">
   <div class="bg-white rounded-2xl shadow-xl border border-gray-200 w-full max-w-md p-6">
     <h3 class="text-lg font-semibold text-gray-900 mb-1">Confirm Price for Follow Up</h3>
@@ -73,19 +73,42 @@ async function loadCampaign() {
   const c = res.campaign;
   allEmails = c.emails;
 
-  // ── Progress calculations ──
   const sentPct    = c.total_emails > 0 ? Math.round((c.sent_count / c.total_emails) * 100) : 0;
   const eligibleFU = c.emails.filter(e => e.status === 'sent' && !e.has_reply && !e.is_bounced).length;
   const failed     = c.emails.filter(e => e.status === 'failed').length;
   const pending    = c.emails.filter(e => e.status === 'pending').length;
 
-  // ── Per-level follow-up calculations ──
-  // e.follow_up_count = how many follow-ups that prospect has already received.
-  // So follow_up_count >= N means they got level N.
-  // maxLevel = highest follow-up level sent so far across all prospects.
   const maxLevel     = c.emails.reduce((m, e) => Math.max(m, e.follow_up_count), 0);
-  // We always show up to maxLevel + 1 so the NEXT level is visible (capped at 20).
   const levelsToShow = Math.min(Math.max(maxLevel + 1, 1), 20);
+
+  // ── Build Facebook links HTML ──
+  const facebookHtml = (c.facebook_links || []).length > 0
+    ? (c.facebook_links).map((url, i) => `
+        <a href="${url}" target="_blank" rel="noopener noreferrer"
+           class="inline-flex items-center gap-1.5 text-xs font-semibold text-blue-700 bg-blue-50 border border-blue-200 rounded-full px-3 py-1 hover:bg-blue-100 transition">
+          📘 ${c.facebook_links.length > 1 ? 'Facebook ' + (i + 1) : 'Facebook Page'}
+        </a>`).join('')
+    : '';
+
+  // ── Build Website links HTML ──
+  const websiteHtml = (c.website_links || []).length > 0
+    ? (c.website_links).map((url, i) => `
+        <a href="${url}" target="_blank" rel="noopener noreferrer"
+           class="inline-flex items-center gap-1.5 text-xs font-semibold text-gray-700 bg-gray-100 border border-gray-200 rounded-full px-3 py-1 hover:bg-gray-200 transition">
+          🌐 ${c.website_links.length > 1 ? 'Website ' + (i + 1) : 'Website'}
+        </a>`).join('')
+    : '';
+
+  // ── Combined outreach links section (only shown if any exist) ──
+  const outreachLinksHtml = (facebookHtml || websiteHtml)
+    ? `<div class="mt-3 p-3 bg-gray-50 border border-gray-200 rounded-xl">
+         <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Manual Outreach Channels</p>
+         <div class="flex flex-wrap gap-2">
+           ${facebookHtml}
+           ${websiteHtml}
+         </div>
+       </div>`
+    : '';
 
   document.getElementById('campaignDetail').innerHTML = `
 
@@ -101,6 +124,9 @@ async function loadCampaign() {
         </div>
         <span class="${statusBadgeClass(c.status)}">${c.status}</span>
       </div>
+
+      <!-- ── MANUAL OUTREACH LINKS — Facebook pages + Websites ── -->
+      ${outreachLinksHtml}
     </div>
 
     <!-- STAT CARDS -->
@@ -138,7 +164,7 @@ async function loadCampaign() {
         </div>
       </div>
 
-      <!-- Follow Up Progress — one bar per level -->
+      <!-- Follow Up Progress -->
       <div>
         <div class="flex items-center justify-between mb-4">
           <div>
@@ -154,11 +180,9 @@ async function loadCampaign() {
           let bars = '';
 
           for (let level = 1; level <= levelsToShow; level++) {
-            // Count prospects who have received AT LEAST this level of follow-up
             const sentAtLevel = c.emails.filter(e => e.follow_up_count >= level).length;
             const pct         = c.sent_count > 0 ? Math.round((sentAtLevel / c.sent_count) * 100) : 0;
             const isComplete  = pct === 100 && sentAtLevel > 0;
-            // The next unsent level — shown faded as a preview of what's coming
             const isNext      = level === maxLevel + 1;
 
             bars += `
@@ -215,7 +239,6 @@ async function loadCampaign() {
       </p>
       <div class="flex flex-wrap gap-3">
 
-        <!-- FOLLOW UP BUTTON -->
         <button onclick="handleFollowUp()" id="followUpBtn"
                 class="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-semibold rounded-lg transition
                        ${eligibleFU === 0
@@ -227,7 +250,6 @@ async function loadCampaign() {
           </span>
         </button>
 
-        <!-- RETRY FAILED -->
         ${failed > 0 ? `
           <button onclick="retryFailed()" id="retryBtn"
                   class="inline-flex items-center gap-2 px-4 py-2.5 bg-amber-500 text-white text-sm font-semibold rounded-lg hover:bg-amber-600 transition">
@@ -246,7 +268,6 @@ async function loadCampaign() {
         <span class="text-xs text-gray-400">${c.emails.length} total</span>
       </div>
 
-      <!-- FILTERS -->
       <div class="px-5 py-3 border-b border-gray-100 flex gap-2 flex-wrap">
         ${filterBtn('all',     'All',     c.emails.length)}
         ${filterBtn('sent',    'Sent',    c.emails.filter(e => e.status === 'sent').length)}
@@ -278,34 +299,29 @@ async function loadCampaign() {
   `;
 }
 
-// ── Follow up handler — checks if price confirmation needed first ──
+// ── Follow up handler ──
 async function handleFollowUp() {
   const eligible = allEmails.filter(e => e.status === 'sent' && !e.has_reply && !e.is_bounced).length;
   if (eligible === 0) { toast('No eligible prospects', 'All have replied or bounced', 'info'); return; }
 
-  // Ask the backend: does the next follow-up template contain {price}?
   const status = await apiGet(`/api/campaigns/${CAMPAIGN_ID}/follow-up-status`);
 
   if (status.needs_price) {
-    // Template has {price} — show the price confirmation modal pre-filled with campaign default
     document.getElementById('defaultPriceLabel').textContent = status.campaign_price || 'not set';
     document.getElementById('priceInput').value              = status.campaign_price || '';
     document.getElementById('priceModal').classList.remove('hidden');
     return;
   }
 
-  // No {price} in template — send directly without asking
   await submitFollowUp(null);
 }
 
-// ── Called when user clicks "Send Follow Up" inside the price modal ──
 async function confirmFollowUpPrice() {
   const price = document.getElementById('priceInput').value.trim();
   document.getElementById('priceModal').classList.add('hidden');
   await submitFollowUp(price);
 }
 
-// ── Actually POST the follow-up to the backend ──
 async function submitFollowUp(price) {
   if (!confirm(`Send follow up to eligible prospects?`)) return;
 
@@ -323,7 +339,6 @@ async function submitFollowUp(price) {
     toast('Follow up queued! 🎉', res.message, 'success');
     loadCampaign();
   } else if (res.needs_price) {
-    // Safety net — backend still says price needed, show modal again
     document.getElementById('defaultPriceLabel').textContent = res.campaign_price || 'not set';
     document.getElementById('priceInput').value              = res.campaign_price || '';
     document.getElementById('priceModal').classList.remove('hidden');
