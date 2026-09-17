@@ -122,7 +122,7 @@
             </div>
           @endif
           <span class="text-sm font-medium text-zinc-300 hidden sm:block">{{ auth()->user()->name }}</span>
-          <svg class="w-3.5 h-3.5 text-zinc-500 transition {{ open ? 'rotate-180' : '' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
+          <svg class="w-3.5 h-3.5 text-zinc-500 transition" :class="open ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
             <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/>
           </svg>
         </button>
