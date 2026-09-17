@@ -2,23 +2,27 @@
 @section('title', 'Templates')
 @section('content')
 
-<div class="mb-6">
-  <h1 class="text-2xl font-bold text-gray-900">Email Templates</h1>
-  <p class="text-gray-500 text-sm mt-1">Max 6 per type · supports initial + follow-up 1 to 20</p>
+<div class="mb-8">
+  <div class="flex items-center gap-2 text-[11px] font-semibold text-[#7c6ef7] uppercase tracking-widest mb-2">
+    <span class="w-1.5 h-1.5 rounded-full bg-[#7c6ef7] inline-block"></span>
+    Messaging
+  </div>
+  <h1 class="text-3xl font-bold text-white tracking-tight">Email Templates</h1>
+  <p class="text-zinc-500 text-sm mt-1.5">Max 6 per type · supports initial + follow-up 1 to 20</p>
 </div>
 
 <!-- TYPE TABS -->
-<div class="mb-6">
+<div class="mb-6 p-2 bg-[#121218] border border-white/[0.06] rounded-2xl w-full inline-block">
   <div class="flex gap-2 mb-2 flex-wrap">
     <button onclick="switchType('bulk_template')" id="tab-bulk_template"
-            class="px-4 py-2 rounded-lg text-sm font-semibold border transition-all border-gray-200 bg-white text-gray-500 hover:text-gray-900">
+            class="px-4 py-2 rounded-xl text-sm font-semibold border transition-all bg-[#7c6ef7] text-white border-[#7c6ef7]">
       📧 Initial
     </button>
   </div>
-  <div class="flex gap-2 flex-wrap">
+  <div class="flex gap-1.5 flex-wrap">
     @for($i = 1; $i <= 20; $i++)
       <button onclick="switchType('followup_{{ $i }}')" id="tab-followup_{{ $i }}"
-              class="px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all border-gray-200 bg-white text-gray-500 hover:text-gray-900">
+              class="px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all bg-white/[0.03] text-zinc-500 border-white/10 hover:text-zinc-200 hover:border-white/20">
         FU {{ $i }}
       </button>
     @endfor
@@ -29,38 +33,38 @@
 
   <!-- LIST -->
   <div>
-    <div class="flex items-center justify-between mb-3">
-      <h2 class="font-semibold text-gray-900" id="typeLabel">Templates</h2>
-      <span id="templateCount" class="text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-200 rounded-full px-2.5 py-0.5">0/6</span>
+    <div class="flex items-center justify-between mb-3.5">
+      <h2 class="font-bold text-white" id="typeLabel">Templates</h2>
+      <span id="templateCount" class="text-xs font-semibold bg-[#7c6ef7]/15 text-[#a78bfa] border border-[#7c6ef7]/25 rounded-full px-2.5 py-1">0/6</span>
     </div>
     <div id="templatesList">
-      <div class="flex items-center justify-center py-12 text-gray-400">
+      <div class="flex items-center justify-center py-12 text-zinc-500">
         <div class="spinner mr-2"></div> Loading...
       </div>
     </div>
   </div>
 
   <!-- FORM -->
-  <div class="bg-white border border-gray-200 rounded-xl p-6">
-    <div class="flex items-center justify-between mb-5">
-      <h2 class="font-semibold text-gray-900" id="formTitle">Create Template</h2>
+  <div class="bg-[#121218] border border-white/[0.06] rounded-2xl p-7">
+    <div class="flex items-center justify-between mb-6">
+      <h2 class="font-bold text-white" id="formTitle">Create Template</h2>
       <button id="cancelEditBtn" onclick="cancelEdit()"
-              class="hidden text-xs px-3 py-1.5 rounded-lg bg-gray-100 text-gray-600 hover:bg-gray-200">
+              class="hidden text-xs px-3.5 py-1.5 rounded-xl bg-white/5 text-zinc-400 hover:bg-white/10 font-medium">
         Cancel Edit
       </button>
     </div>
 
-    <div class="space-y-4">
+    <div class="space-y-5">
       <div>
-        <label class="block text-sm font-medium text-gray-700 mb-1">Name *</label>
+        <label class="block text-sm font-medium text-zinc-300 mb-1.5">Name *</label>
         <input type="text" id="tplName" placeholder="e.g. Domain Outreach v1"
-               class="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-200">
+               class="w-full bg-[#0e0e14] border border-white/10 rounded-xl px-3.5 py-2.5 text-sm text-zinc-200 placeholder-zinc-600 outline-none focus:border-[#7c6ef7]/60 focus:ring-1 focus:ring-[#7c6ef7]/30 transition">
       </div>
 
       <div>
-        <label class="block text-sm font-medium text-gray-700 mb-1">Type *</label>
+        <label class="block text-sm font-medium text-zinc-300 mb-1.5">Type *</label>
         <select id="tplType" onchange="onTypeChange()"
-                class="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm outline-none focus:border-blue-500">
+                class="w-full bg-[#0e0e14] border border-white/10 rounded-xl px-3.5 py-2.5 text-sm text-zinc-200 outline-none focus:border-[#7c6ef7]/60 transition">
           <option value="bulk_template">📧 Initial Outbound</option>
           @for($i = 1; $i <= 20; $i++)
             <option value="followup_{{ $i }}">🔄 Follow-up {{ $i }}</option>
@@ -69,13 +73,13 @@
       </div>
 
       <div>
-        <label class="block text-sm font-medium text-gray-700 mb-1">Subject *</label>
+        <label class="block text-sm font-medium text-zinc-300 mb-1.5">Subject *</label>
         <input type="text" id="tplSubject" placeholder="{company} — {domain} opportunity"
-               class="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-200 mb-2">
+               class="w-full bg-[#0e0e14] border border-white/10 rounded-xl px-3.5 py-2.5 text-sm text-zinc-200 placeholder-zinc-600 outline-none focus:border-[#7c6ef7]/60 focus:ring-1 focus:ring-[#7c6ef7]/30 transition mb-2.5">
         <div class="flex flex-wrap gap-1.5">
           @foreach(['{company}', '{domain}', '{price}', '{firstName}', '{yourName}'] as $var)
             <button type="button" onclick="insertSubjectVar('{{ $var }}')"
-                    class="text-xs px-2 py-1 rounded font-mono font-semibold bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100">
+                    class="text-xs px-2.5 py-1.5 rounded-lg font-mono font-semibold bg-[#7c6ef7]/10 text-[#a78bfa] border border-[#7c6ef7]/25 hover:bg-[#7c6ef7]/20 transition">
               {{ $var }}
             </button>
           @endforeach
@@ -83,14 +87,14 @@
       </div>
 
       <div>
-        <label class="block text-sm font-medium text-gray-700 mb-1">Body *</label>
+        <label class="block text-sm font-medium text-zinc-300 mb-1.5">Body *</label>
         <textarea id="tplBody" rows="10"
-                  class="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-200 font-mono mb-2"
+                  class="w-full bg-[#0e0e14] border border-white/10 rounded-xl px-3.5 py-2.5 text-sm text-zinc-200 placeholder-zinc-600 outline-none focus:border-[#7c6ef7]/60 focus:ring-1 focus:ring-[#7c6ef7]/30 transition font-mono mb-2.5"
                   placeholder="Hi {firstName},&#10;&#10;I noticed {company} doesn't own {domain}..."></textarea>
         <div class="flex flex-wrap gap-1.5">
           @foreach(['{company}', '{domain}', '{price}', '{firstName}', '{yourName}'] as $var)
             <button type="button" onclick="insertVar('{{ $var }}')"
-                    class="text-xs px-2 py-1 rounded font-mono font-semibold bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100">
+                    class="text-xs px-2.5 py-1.5 rounded-lg font-mono font-semibold bg-[#7c6ef7]/10 text-[#a78bfa] border border-[#7c6ef7]/25 hover:bg-[#7c6ef7]/20 transition">
               {{ $var }}
             </button>
           @endforeach
@@ -98,26 +102,26 @@
       </div>
 
       <!-- SAMPLES -->
-      <div class="bg-green-50 border border-green-200 rounded-lg p-3">
-        <p class="text-xs font-semibold text-green-700 mb-2">Load sample:</p>
+      <div class="bg-emerald-500/[0.06] border border-emerald-500/20 rounded-xl p-4">
+        <p class="text-xs font-semibold text-emerald-400 mb-2.5">Load sample:</p>
         <div class="flex flex-wrap gap-2">
           <button type="button" onclick="loadSample('initial')"
-                  class="text-xs px-3 py-1.5 rounded-lg bg-green-100 text-green-700 border border-green-200 hover:bg-green-200 font-medium">
+                  class="text-xs px-3.5 py-1.5 rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/25 hover:bg-emerald-500/20 transition font-medium">
             📧 Initial
           </button>
           <button type="button" onclick="loadSample('followup1')"
-                  class="text-xs px-3 py-1.5 rounded-lg bg-green-100 text-green-700 border border-green-200 hover:bg-green-200 font-medium">
+                  class="text-xs px-3.5 py-1.5 rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/25 hover:bg-emerald-500/20 transition font-medium">
             🔄 Follow-up 1
           </button>
           <button type="button" onclick="loadSample('followup2')"
-                  class="text-xs px-3 py-1.5 rounded-lg bg-green-100 text-green-700 border border-green-200 hover:bg-green-200 font-medium">
+                  class="text-xs px-3.5 py-1.5 rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/25 hover:bg-emerald-500/20 transition font-medium">
             🔄 Follow-up 2
           </button>
         </div>
       </div>
 
       <button type="button" id="saveBtn" onclick="saveTemplate()"
-              class="w-full bg-blue-600 text-white rounded-lg py-3 text-sm font-semibold hover:bg-blue-700 transition">
+              class="w-full bg-[#7c6ef7] hover:bg-[#8d80f9] text-white rounded-xl py-3.5 text-sm font-bold transition">
         Save Template
       </button>
     </div>
@@ -129,7 +133,13 @@
 <script>
 let currentType       = 'bulk_template';
 let editingTemplateId = null;
-let templatesCache    = {};  // ✅ stores templates by id — fixes broken Edit onclick
+let templatesCache    = {};
+
+const TAB_ACTIVE        = 'bg-[#7c6ef7] text-white border-[#7c6ef7]';
+const TAB_INACTIVE_LG   = 'px-4 py-2 rounded-xl text-sm font-semibold border transition-all bg-white/[0.03] text-zinc-500 border-white/10 hover:text-zinc-200 hover:border-white/20';
+const TAB_INACTIVE_SM   = 'px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all bg-white/[0.03] text-zinc-500 border-white/10 hover:text-zinc-200 hover:border-white/20';
+const SAVE_CREATE_CLASS = 'w-full bg-[#7c6ef7] hover:bg-[#8d80f9] text-white rounded-xl py-3.5 text-sm font-bold transition';
+const SAVE_EDIT_CLASS   = 'w-full bg-amber-500 hover:bg-amber-400 text-white rounded-xl py-3.5 text-sm font-bold transition';
 
 const samples = {
   initial: {
@@ -151,11 +161,10 @@ document.addEventListener('DOMContentLoaded', () => switchType('bulk_template'))
 function switchType(type) {
   currentType = type;
   document.querySelectorAll('[id^="tab-"]').forEach(t => {
-    t.className = 'px-4 py-2 rounded-lg text-sm font-semibold border transition-all border-gray-200 bg-white text-gray-500 hover:text-gray-900';
-    if (t.id.includes('followup')) t.className = 'px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all border-gray-200 bg-white text-gray-500 hover:text-gray-900';
+    t.className = t.id.includes('followup') ? TAB_INACTIVE_SM : TAB_INACTIVE_LG;
   });
   const active = document.getElementById(`tab-${type}`);
-  if (active) active.className = active.className.replace('bg-white text-gray-500', 'bg-blue-600 text-white border-blue-600');
+  if (active) active.className = TAB_ACTIVE;
   document.getElementById('typeLabel').textContent = type === 'bulk_template' ? 'Initial Outbound Templates' : `Follow-up ${type.replace('followup_', '')} Templates`;
   document.getElementById('tplType').value = type;
   loadTemplates(type);
@@ -179,52 +188,50 @@ async function loadTemplates(type) {
   const el  = document.getElementById('templatesList');
   const cnt = res.templates?.length || 0;
 
-  // ✅ cache all templates by id for safe retrieval in editTemplate()
   templatesCache = {};
   res.templates?.forEach(t => templatesCache[t.id] = t);
 
   const countEl = document.getElementById('templateCount');
   countEl.textContent = `${cnt}/6`;
   countEl.className = cnt >= 6
-    ? 'text-xs font-semibold bg-red-50 text-red-700 border border-red-200 rounded-full px-2.5 py-0.5'
+    ? 'text-xs font-semibold bg-red-500/10 text-red-400 border border-red-500/25 rounded-full px-2.5 py-1'
     : cnt >= 4
-    ? 'text-xs font-semibold bg-yellow-50 text-yellow-700 border border-yellow-200 rounded-full px-2.5 py-0.5'
-    : 'text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-200 rounded-full px-2.5 py-0.5';
+    ? 'text-xs font-semibold bg-amber-500/10 text-amber-400 border border-amber-500/25 rounded-full px-2.5 py-1'
+    : 'text-xs font-semibold bg-[#7c6ef7]/15 text-[#a78bfa] border border-[#7c6ef7]/25 rounded-full px-2.5 py-1';
 
   if (!cnt) {
     el.innerHTML = `
-      <div class="bg-white border border-gray-200 rounded-xl p-8 text-center">
-        <p class="text-gray-400">No templates yet. Load a sample or create one →</p>
+      <div class="bg-[#121218] border border-white/[0.06] rounded-2xl p-10 text-center">
+        <p class="text-zinc-500">No templates yet. Load a sample or create one →</p>
       </div>`;
     return;
   }
 
-  // ✅ only pass the id — no more inline multiline strings that break onclick
   el.innerHTML = res.templates.map((t, i) => `
-    <div class="bg-white border border-gray-200 rounded-xl p-4 mb-3">
+    <div class="bg-[#121218] border border-white/[0.06] rounded-2xl p-5 mb-3">
       <div class="flex items-start justify-between mb-3">
-        <div class="flex items-center gap-2">
-          <span class="text-xs font-bold bg-blue-50 text-blue-700 border border-blue-200 rounded-full px-2 py-0.5">#${i+1}</span>
-          <p class="font-semibold text-gray-900 text-sm">${t.name}</p>
+        <div class="flex items-center gap-2.5">
+          <span class="text-xs font-bold bg-[#7c6ef7]/15 text-[#a78bfa] border border-[#7c6ef7]/25 rounded-full px-2 py-0.5">#${i+1}</span>
+          <p class="font-bold text-white text-sm">${t.name}</p>
         </div>
         <div class="flex gap-2">
           <button onclick="editTemplate(${t.id})"
-                  class="text-xs px-2.5 py-1.5 rounded-lg bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100 font-medium">
+                  class="text-xs px-3 py-1.5 rounded-xl bg-[#7c6ef7]/10 text-[#a78bfa] border border-[#7c6ef7]/25 hover:bg-[#7c6ef7]/20 font-medium transition">
             Edit
           </button>
           <button onclick="deleteTemplate(${t.id})"
-                  class="text-xs px-2.5 py-1.5 rounded-lg bg-red-50 text-red-600 border border-red-200 hover:bg-red-100 font-medium">
+                  class="text-xs px-3 py-1.5 rounded-xl bg-red-500/10 text-red-400 border border-red-500/25 hover:bg-red-500/20 font-medium transition">
             Delete
           </button>
         </div>
       </div>
-      <div class="bg-gray-50 rounded-lg p-2.5 mb-2 border border-gray-100">
-        <p class="text-xs text-gray-400 mb-0.5 font-medium">Subject:</p>
-        <p class="text-sm text-gray-700">${t.subject_template}</p>
+      <div class="bg-[#0e0e14] rounded-xl p-3 mb-2.5 border border-white/[0.05]">
+        <p class="text-xs text-zinc-600 mb-1 font-medium">Subject:</p>
+        <p class="text-sm text-zinc-300">${t.subject_template}</p>
       </div>
-      <div class="bg-gray-50 rounded-lg p-2.5 border border-gray-100">
-        <p class="text-xs text-gray-400 mb-0.5 font-medium">Preview:</p>
-        <p class="text-xs text-gray-500 font-mono whitespace-pre-wrap">${t.body_template.substring(0, 120)}${t.body_template.length > 120 ? '...' : ''}</p>
+      <div class="bg-[#0e0e14] rounded-xl p-3 border border-white/[0.05]">
+        <p class="text-xs text-zinc-600 mb-1 font-medium">Preview:</p>
+        <p class="text-xs text-zinc-500 font-mono whitespace-pre-wrap">${t.body_template.substring(0, 120)}${t.body_template.length > 120 ? '...' : ''}</p>
       </div>
     </div>`
   ).join('');
@@ -246,7 +253,6 @@ function insertSubjectVar(variable) {
   el.focus();
 }
 
-// ✅ fixed: reads from cache instead of broken inline onclick parameters
 function editTemplate(id) {
   const t = templatesCache[id];
   if (!t) return;
@@ -260,7 +266,7 @@ function editTemplate(id) {
   document.getElementById('cancelEditBtn').classList.remove('hidden');
   const btn = document.getElementById('saveBtn');
   btn.textContent = 'Update Template';
-  btn.className   = btn.className.replace('bg-blue-600 hover:bg-blue-700', 'bg-amber-500 hover:bg-amber-600');
+  btn.className   = SAVE_EDIT_CLASS;
   btn.scrollIntoView({ behavior: 'smooth', block: 'center' });
 }
 
@@ -273,7 +279,7 @@ function cancelEdit() {
   document.getElementById('cancelEditBtn').classList.add('hidden');
   const btn = document.getElementById('saveBtn');
   btn.textContent = 'Save Template';
-  btn.className   = btn.className.replace('bg-amber-500 hover:bg-amber-600', 'bg-blue-600 hover:bg-blue-700');
+  btn.className   = SAVE_CREATE_CLASS;
 }
 
 async function saveTemplate() {
@@ -296,6 +302,7 @@ async function saveTemplate() {
 
   btn.disabled    = false;
   btn.textContent = editingTemplateId ? 'Update Template' : 'Save Template';
+  btn.className   = editingTemplateId ? SAVE_EDIT_CLASS : SAVE_CREATE_CLASS;
 
   if (res.success) {
     toast('Saved!', editingTemplateId ? 'Template updated' : 'Template saved', 'success');

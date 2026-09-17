@@ -3,35 +3,35 @@
 @section('content')
 
 <div id="campaignDetail">
-  <div class="flex items-center justify-center py-16 text-gray-400">
+  <div class="flex items-center justify-center py-16 text-zinc-500">
     <div class="spinner mr-3"></div> Loading campaign...
   </div>
 </div>
 
 <!-- PRICE PROMPT MODAL -->
-<div id="priceModal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40">
-  <div class="bg-white rounded-2xl shadow-xl border border-gray-200 w-full max-w-md p-6">
-    <h3 class="text-lg font-semibold text-gray-900 mb-1">Confirm Price for Follow Up</h3>
-    <p class="text-sm text-gray-500 mb-4">
-      Your follow up template contains <code class="bg-gray-100 px-1 rounded text-xs">{price}</code>.
+<div id="priceModal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
+  <div class="bg-[#121218] rounded-3xl border border-white/[0.08] w-full max-w-md p-7 shadow-2xl">
+    <h3 class="text-lg font-bold text-white mb-1.5">Confirm Price for Follow Up</h3>
+    <p class="text-sm text-zinc-500 mb-5">
+      Your follow up template contains <code class="bg-[#0e0e14] px-1.5 py-0.5 rounded-lg border border-white/10 text-xs text-[#a78bfa]">{price}</code>.
       Confirm or update the price for this follow up.
     </p>
-    <div class="mb-4">
-      <label class="block text-sm font-medium text-gray-700 mb-1">Price</label>
+    <div class="mb-5">
+      <label class="block text-sm font-medium text-zinc-300 mb-1.5">Price</label>
       <input type="text" id="priceInput"
-             class="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-200"
+             class="w-full bg-[#0e0e14] border border-white/10 rounded-xl px-3.5 py-2.5 text-sm text-zinc-200 placeholder-zinc-600 outline-none focus:border-[#7c6ef7]/60 focus:ring-1 focus:ring-[#7c6ef7]/30 transition"
              placeholder="e.g. $2,499">
-      <p class="text-xs text-gray-400 mt-1">
-        Campaign default: <span id="defaultPriceLabel" class="font-semibold text-gray-600"></span>
+      <p class="text-xs text-zinc-600 mt-1.5">
+        Campaign default: <span id="defaultPriceLabel" class="font-semibold text-zinc-400"></span>
       </p>
     </div>
     <div class="flex gap-3">
       <button onclick="confirmFollowUpPrice()"
-              class="flex-1 bg-green-600 text-white rounded-lg py-2.5 text-sm font-semibold hover:bg-green-700">
+              class="flex-1 bg-emerald-500 hover:bg-emerald-400 text-white rounded-xl py-2.5 text-sm font-bold transition">
         Send Follow Up
       </button>
       <button onclick="document.getElementById('priceModal').classList.add('hidden')"
-              class="flex-1 bg-gray-100 text-gray-700 rounded-lg py-2.5 text-sm font-semibold hover:bg-gray-200">
+              class="flex-1 bg-white/5 text-zinc-400 rounded-xl py-2.5 text-sm font-semibold hover:bg-white/10 transition">
         Cancel
       </button>
     </div>
@@ -60,10 +60,10 @@ async function loadCampaign() {
 
   if (!res.success) {
     document.getElementById('campaignDetail').innerHTML = `
-      <div class="bg-white border border-gray-200 rounded-xl p-12 text-center">
-        <p class="text-gray-500 mb-4">Campaign not found</p>
+      <div class="bg-[#121218] border border-white/[0.06] rounded-3xl p-14 text-center">
+        <p class="text-zinc-400 mb-5">Campaign not found</p>
         <a href="{{ route('campaigns.index') }}"
-           class="inline-flex items-center px-4 py-2 bg-blue-600 text-white text-sm font-semibold rounded-lg hover:bg-blue-700">
+           class="inline-flex items-center px-5 py-2.5 bg-[#7c6ef7] text-white text-sm font-semibold rounded-xl hover:bg-[#8d80f9] transition">
           ← Back
         </a>
       </div>`;
@@ -85,7 +85,7 @@ async function loadCampaign() {
   const facebookHtml = (c.facebook_links || []).length > 0
     ? (c.facebook_links).map((url, i) => `
         <a href="${url}" target="_blank" rel="noopener noreferrer"
-           class="inline-flex items-center gap-1.5 text-xs font-semibold text-blue-700 bg-blue-50 border border-blue-200 rounded-full px-3 py-1 hover:bg-blue-100 transition">
+           class="inline-flex items-center gap-1.5 text-xs font-semibold text-[#a78bfa] bg-[#7c6ef7]/10 border border-[#7c6ef7]/25 rounded-full px-3 py-1.5 hover:bg-[#7c6ef7]/20 transition">
           📘 ${c.facebook_links.length > 1 ? 'Facebook ' + (i + 1) : 'Facebook Page'}
         </a>`).join('')
     : '';
@@ -94,15 +94,15 @@ async function loadCampaign() {
   const websiteHtml = (c.website_links || []).length > 0
     ? (c.website_links).map((url, i) => `
         <a href="${url}" target="_blank" rel="noopener noreferrer"
-           class="inline-flex items-center gap-1.5 text-xs font-semibold text-gray-700 bg-gray-100 border border-gray-200 rounded-full px-3 py-1 hover:bg-gray-200 transition">
+           class="inline-flex items-center gap-1.5 text-xs font-semibold text-zinc-400 bg-white/5 border border-white/10 rounded-full px-3 py-1.5 hover:bg-white/10 transition">
           🌐 ${c.website_links.length > 1 ? 'Website ' + (i + 1) : 'Website'}
         </a>`).join('')
     : '';
 
-  // ── Combined outreach links section (only shown if any exist) ──
+  // ── Combined outreach links section ──
   const outreachLinksHtml = (facebookHtml || websiteHtml)
-    ? `<div class="mt-3 p-3 bg-gray-50 border border-gray-200 rounded-xl">
-         <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Manual Outreach Channels</p>
+    ? `<div class="mt-5 p-4 bg-[#0e0e14] border border-white/[0.06] rounded-2xl">
+         <p class="text-[11px] font-semibold text-zinc-500 uppercase tracking-widest mb-2.5">Manual Outreach Channels</p>
          <div class="flex flex-wrap gap-2">
            ${facebookHtml}
            ${websiteHtml}
@@ -113,67 +113,66 @@ async function loadCampaign() {
   document.getElementById('campaignDetail').innerHTML = `
 
     <!-- BREADCRUMB -->
-    <div class="mb-6">
-      <a href="{{ route('campaigns.index') }}" class="text-sm text-gray-400 hover:text-gray-600">← Campaigns</a>
+    <div class="mb-7">
+      <a href="{{ route('campaigns.index') }}" class="text-sm text-zinc-600 hover:text-zinc-300 transition font-medium">← Campaigns</a>
       <div class="flex items-start justify-between mt-2">
         <div>
-          <h1 class="text-2xl font-bold text-gray-900">${c.name}</h1>
-          <p class="text-gray-500 text-sm mt-1">
+          <h1 class="text-3xl font-bold text-white tracking-tight">${c.name}</h1>
+          <p class="text-zinc-500 text-sm mt-1.5">
             ${c.domain} · ${c.price} · sent by ${c.your_name}
           </p>
         </div>
         <span class="${statusBadgeClass(c.status)}">${c.status}</span>
       </div>
 
-      <!-- ── MANUAL OUTREACH LINKS — Facebook pages + Websites ── -->
       ${outreachLinksHtml}
     </div>
 
     <!-- STAT CARDS -->
-    <div class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
-      ${statBox('Total',      c.total_emails,    'text-blue-600')}
-      ${statBox('Sent',       c.sent_count,      'text-green-600')}
-      ${statBox('Replied',    c.replied_count,   'text-purple-600')}
-      ${statBox('Follow-ups', c.follow_up_count, 'text-amber-600')}
-      ${statBox('Bounced',    c.bounce_count,    'text-red-500')}
+    <div class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-7">
+      ${statBox('Total',      c.total_emails,    'text-sky-400')}
+      ${statBox('Sent',       c.sent_count,      'text-emerald-400')}
+      ${statBox('Replied',    c.replied_count,   'text-[#a78bfa]')}
+      ${statBox('Follow-ups', c.follow_up_count, 'text-amber-400')}
+      ${statBox('Bounced',    c.bounce_count,    'text-red-400')}
     </div>
 
     <!-- PROGRESS BARS -->
-    <div class="bg-white border border-gray-200 rounded-xl p-5 mb-6">
-      <h2 class="font-semibold text-gray-900 mb-5">Sending Progress</h2>
+    <div class="bg-[#121218] border border-white/[0.06] rounded-2xl p-6 mb-6">
+      <h2 class="font-bold text-white mb-6">Sending Progress</h2>
 
       <!-- Initial Emails Progress -->
-      <div class="mb-6">
-        <div class="flex items-center justify-between mb-1.5">
+      <div class="mb-7">
+        <div class="flex items-center justify-between mb-2">
           <div>
-            <span class="text-sm font-medium text-gray-700">Initial Emails</span>
-            ${pending > 0 ? `<span class="ml-2 text-xs bg-blue-50 text-blue-600 border border-blue-200 rounded-full px-2 py-0.5">${pending} queued</span>` : ''}
+            <span class="text-sm font-semibold text-zinc-300">Initial Emails</span>
+            ${pending > 0 ? `<span class="ml-2 text-xs bg-sky-500/10 text-sky-400 border border-sky-500/25 rounded-full px-2 py-0.5">${pending} queued</span>` : ''}
           </div>
-          <span class="text-sm font-semibold text-gray-900">
+          <span class="text-sm font-bold text-white">
             ${c.sent_count} / ${c.total_emails}
-            <span class="text-gray-400 font-normal">(${sentPct}%)</span>
+            <span class="text-zinc-500 font-normal">(${sentPct}%)</span>
           </span>
         </div>
-        <div class="bg-gray-100 rounded-full h-3 overflow-hidden">
-          <div class="h-3 rounded-full transition-all duration-500 ${sentPct === 100 ? 'bg-green-500' : 'bg-blue-500'}"
+        <div class="bg-white/5 rounded-full h-3 overflow-hidden">
+          <div class="h-3 rounded-full transition-all duration-500 ${sentPct === 100 ? 'bg-emerald-500' : 'bg-[#7c6ef7]'}"
                style="width: ${sentPct}%"></div>
         </div>
-        <div class="flex items-center justify-between mt-1">
-          <p class="text-xs text-gray-400">${sentPct === 100 ? '✅ All initial emails sent' : sentPct + '% complete'}</p>
-          <p class="text-xs text-gray-400">${c.total_emails - c.sent_count} remaining</p>
+        <div class="flex items-center justify-between mt-1.5">
+          <p class="text-xs text-zinc-600">${sentPct === 100 ? '✅ All initial emails sent' : sentPct + '% complete'}</p>
+          <p class="text-xs text-zinc-600">${c.total_emails - c.sent_count} remaining</p>
         </div>
       </div>
 
       <!-- Follow Up Progress -->
       <div>
-        <div class="flex items-center justify-between mb-4">
+        <div class="flex items-center justify-between mb-5">
           <div>
-            <span class="text-sm font-medium text-gray-700">Follow Ups</span>
-            <span class="ml-2 text-xs bg-gray-100 text-gray-500 border border-gray-200 rounded-full px-2 py-0.5">
+            <span class="text-sm font-semibold text-zinc-300">Follow Ups</span>
+            <span class="ml-2 text-xs bg-white/5 text-zinc-500 border border-white/10 rounded-full px-2 py-0.5">
               ${eligibleFU} eligible now
             </span>
           </div>
-          <span class="text-sm font-semibold text-gray-900">${c.follow_up_count} total sent</span>
+          <span class="text-sm font-bold text-white">${c.follow_up_count} total sent</span>
         </div>
 
         ${(() => {
@@ -186,29 +185,29 @@ async function loadCampaign() {
             const isNext      = level === maxLevel + 1;
 
             bars += `
-              <div class="mb-4 ${isNext ? 'opacity-55' : ''}">
-                <div class="flex items-center justify-between mb-1.5">
+              <div class="mb-5 ${isNext ? 'opacity-50' : ''}">
+                <div class="flex items-center justify-between mb-2">
                   <div class="flex items-center gap-2">
-                    <span class="text-sm font-medium text-gray-700">Follow-up ${level}</span>
+                    <span class="text-sm font-semibold text-zinc-300">Follow-up ${level}</span>
                     ${isNext
-                      ? `<span class="text-xs bg-blue-50 text-blue-600 border border-blue-200 rounded-full px-2 py-0.5">next to send</span>`
+                      ? `<span class="text-xs bg-sky-500/10 text-sky-400 border border-sky-500/25 rounded-full px-2 py-0.5">next to send</span>`
                       : isComplete
-                        ? `<span class="text-xs bg-green-50 text-green-700 border border-green-200 rounded-full px-2 py-0.5">complete</span>`
-                        : `<span class="text-xs bg-amber-50 text-amber-600 border border-amber-200 rounded-full px-2 py-0.5">in progress</span>`
+                        ? `<span class="text-xs bg-emerald-500/10 text-emerald-400 border border-emerald-500/25 rounded-full px-2 py-0.5">complete</span>`
+                        : `<span class="text-xs bg-amber-500/10 text-amber-400 border border-amber-500/25 rounded-full px-2 py-0.5">in progress</span>`
                     }
                   </div>
-                  <span class="text-sm font-semibold text-gray-900">
+                  <span class="text-sm font-bold text-white">
                     ${sentAtLevel} / ${c.sent_count}
-                    <span class="text-gray-400 font-normal">(${pct}%)</span>
+                    <span class="text-zinc-500 font-normal">(${pct}%)</span>
                   </span>
                 </div>
-                <div class="bg-gray-100 rounded-full h-2.5 overflow-hidden">
+                <div class="bg-white/5 rounded-full h-2.5 overflow-hidden">
                   <div class="h-2.5 rounded-full transition-all duration-500
-                              ${isComplete ? 'bg-green-500' : isNext ? 'bg-gray-300' : 'bg-amber-500'}"
+                              ${isComplete ? 'bg-emerald-500' : isNext ? 'bg-zinc-600' : 'bg-amber-400'}"
                        style="width: ${pct}%"></div>
                 </div>
-                <div class="flex items-center justify-between mt-1">
-                  <p class="text-xs text-gray-400">
+                <div class="flex items-center justify-between mt-1.5">
+                  <p class="text-xs text-zinc-600">
                     ${isComplete
                       ? '✅ All prospects received this follow-up'
                       : isNext
@@ -217,7 +216,7 @@ async function loadCampaign() {
                     }
                   </p>
                   ${!isComplete && !isNext
-                    ? `<p class="text-xs text-gray-400">${pct}% reached</p>`
+                    ? `<p class="text-xs text-zinc-600">${pct}% reached</p>`
                     : ''
                   }
                 </div>
@@ -225,36 +224,36 @@ async function loadCampaign() {
             `;
           }
 
-          return bars || `<p class="text-sm text-gray-400 py-2">No follow-ups sent yet. Click "Send Follow Up" below to start.</p>`;
+          return bars || `<p class="text-sm text-zinc-500 py-2">No follow-ups sent yet. Click "Send Follow Up" below to start.</p>`;
         })()}
       </div>
     </div>
 
     <!-- ACTIONS -->
-    <div class="bg-white border border-gray-200 rounded-xl p-5 mb-6">
-      <h2 class="font-semibold text-gray-900 mb-1">Actions</h2>
-      <p class="text-xs text-gray-400 mb-4">
+    <div class="bg-[#121218] border border-white/[0.06] rounded-2xl p-6 mb-6">
+      <h2 class="font-bold text-white mb-1.5">Actions</h2>
+      <p class="text-xs text-zinc-600 mb-5">
         Follow up sends to prospects: sent · not replied · not bounced
-        <span class="font-semibold text-gray-600">(${eligibleFU} eligible)</span>
+        <span class="font-semibold text-zinc-400">(${eligibleFU} eligible)</span>
       </p>
       <div class="flex flex-wrap gap-3">
 
         <button onclick="handleFollowUp()" id="followUpBtn"
-                class="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-semibold rounded-lg transition
+                class="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-bold rounded-xl transition
                        ${eligibleFU === 0
-                         ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                         : 'bg-green-600 text-white hover:bg-green-700'}">
+                         ? 'bg-white/5 text-zinc-600 cursor-not-allowed'
+                         : 'bg-emerald-500 text-white hover:bg-emerald-400'}">
           🔄 Send Follow Up
-          <span class="text-xs ${eligibleFU === 0 ? 'bg-gray-200 text-gray-400' : 'bg-green-500 text-white'} rounded-full px-1.5 py-0.5">
+          <span class="text-xs ${eligibleFU === 0 ? 'bg-white/10 text-zinc-500' : 'bg-emerald-700 text-white'} rounded-full px-2 py-0.5">
             ${eligibleFU}
           </span>
         </button>
 
         ${failed > 0 ? `
           <button onclick="retryFailed()" id="retryBtn"
-                  class="inline-flex items-center gap-2 px-4 py-2.5 bg-amber-500 text-white text-sm font-semibold rounded-lg hover:bg-amber-600 transition">
+                  class="inline-flex items-center gap-2 px-5 py-2.5 bg-amber-500 text-white text-sm font-bold rounded-xl hover:bg-amber-400 transition">
             🔁 Retry Failed
-            <span class="bg-amber-400 text-white text-xs rounded-full px-1.5 py-0.5">${failed}</span>
+            <span class="bg-amber-700 text-white text-xs rounded-full px-2 py-0.5">${failed}</span>
           </button>
         ` : ''}
 
@@ -262,13 +261,13 @@ async function loadCampaign() {
     </div>
 
     <!-- PROSPECTS TABLE -->
-    <div class="bg-white border border-gray-200 rounded-xl overflow-hidden">
-      <div class="px-5 py-4 border-b border-gray-200 flex items-center justify-between">
-        <h2 class="font-semibold text-gray-900">Prospects</h2>
-        <span class="text-xs text-gray-400">${c.emails.length} total</span>
+    <div class="bg-[#121218] border border-white/[0.06] rounded-2xl overflow-hidden">
+      <div class="px-6 py-4 border-b border-white/[0.06] flex items-center justify-between">
+        <h2 class="font-bold text-white">Prospects</h2>
+        <span class="text-xs text-zinc-600 font-medium">${c.emails.length} total</span>
       </div>
 
-      <div class="px-5 py-3 border-b border-gray-100 flex gap-2 flex-wrap">
+      <div class="px-6 py-3.5 border-b border-white/[0.05] flex gap-2 flex-wrap">
         ${filterBtn('all',     'All',     c.emails.length)}
         ${filterBtn('sent',    'Sent',    c.emails.filter(e => e.status === 'sent').length)}
         ${filterBtn('replied', 'Replied', c.emails.filter(e => e.has_reply).length)}
@@ -279,15 +278,15 @@ async function loadCampaign() {
 
       <div class="overflow-x-auto">
         <table class="w-full text-sm">
-          <thead class="bg-gray-50">
+          <thead class="bg-white/[0.03]">
             <tr>
-              <th class="text-left py-3 px-4 text-xs font-semibold text-gray-500 uppercase">Email</th>
-              <th class="text-left py-3 px-4 text-xs font-semibold text-gray-500 uppercase">Name</th>
-              <th class="text-left py-3 px-4 text-xs font-semibold text-gray-500 uppercase">Company</th>
-              <th class="text-left py-3 px-4 text-xs font-semibold text-gray-500 uppercase">Status</th>
-              <th class="text-left py-3 px-4 text-xs font-semibold text-gray-500 uppercase">Follow-ups</th>
-              <th class="text-left py-3 px-4 text-xs font-semibold text-gray-500 uppercase">Sent at</th>
-              <th class="text-left py-3 px-4 text-xs font-semibold text-gray-500 uppercase">Account</th>
+              <th class="text-left py-3.5 px-4 text-[11px] font-semibold text-zinc-500 uppercase tracking-wider">Email</th>
+              <th class="text-left py-3.5 px-4 text-[11px] font-semibold text-zinc-500 uppercase tracking-wider">Name</th>
+              <th class="text-left py-3.5 px-4 text-[11px] font-semibold text-zinc-500 uppercase tracking-wider">Company</th>
+              <th class="text-left py-3.5 px-4 text-[11px] font-semibold text-zinc-500 uppercase tracking-wider">Status</th>
+              <th class="text-left py-3.5 px-4 text-[11px] font-semibold text-zinc-500 uppercase tracking-wider">Follow-ups</th>
+              <th class="text-left py-3.5 px-4 text-[11px] font-semibold text-zinc-500 uppercase tracking-wider">Sent at</th>
+              <th class="text-left py-3.5 px-4 text-[11px] font-semibold text-zinc-500 uppercase tracking-wider">Account</th>
             </tr>
           </thead>
           <tbody id="emailsBody">
@@ -359,29 +358,31 @@ async function retryFailed() {
   else toast('Error', res.error, 'error');
 }
 
+const FILTER_ACTIVE   = 'text-xs px-3.5 py-1.5 rounded-xl font-semibold border transition-all bg-[#7c6ef7] text-white border-[#7c6ef7]';
+const FILTER_INACTIVE = 'text-xs px-3.5 py-1.5 rounded-xl font-semibold border transition-all bg-white/[0.03] text-zinc-500 border-white/10 hover:border-[#7c6ef7]/40 hover:text-zinc-300';
+
 function filterBtn(filter, label, count) {
   const isActive = filter === 'all';
   return `
     <button onclick="filterEmails('${filter}')" id="filter-${filter}"
-            class="text-xs px-3 py-1.5 rounded-lg font-semibold border transition-all
-                   ${isActive ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-600 border-gray-200 hover:border-blue-300'}">
+            class="${isActive ? FILTER_ACTIVE : FILTER_INACTIVE}">
       ${label} (${count})
     </button>`;
 }
 
 function renderEmails(emails) {
   if (!emails.length) {
-    return `<tr><td colspan="7" class="text-center py-10 text-gray-400 text-sm">No prospects found</td></tr>`;
+    return `<tr><td colspan="7" class="text-center py-10 text-zinc-500 text-sm">No prospects found</td></tr>`;
   }
   return emails.map(e => `
-    <tr class="border-b border-gray-100 hover:bg-gray-50 transition">
-      <td class="py-3 px-4 text-gray-900 font-medium text-sm">${e.to_email}</td>
-      <td class="py-3 px-4 text-gray-600 text-sm">${e.first_name || '—'}</td>
-      <td class="py-3 px-4 text-gray-600 text-sm">${e.company_name || '—'}</td>
-      <td class="py-3 px-4"><span class="${emailStatusClass(e)}">${emailStatusLabel(e)}</span></td>
-      <td class="py-3 px-4 text-gray-500 text-sm">${e.follow_up_count}</td>
-      <td class="py-3 px-4 text-gray-400 text-xs">${e.sent_at ? new Date(e.sent_at).toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'numeric' }) : '—'}</td>
-      <td class="py-3 px-4 text-gray-400 text-xs truncate max-w-[140px]">${e.gmail_account || '—'}</td>
+    <tr class="border-b border-white/[0.04] hover:bg-white/[0.03] transition">
+      <td class="py-3.5 px-4 text-zinc-200 font-semibold text-sm">${e.to_email}</td>
+      <td class="py-3.5 px-4 text-zinc-400 text-sm">${e.first_name || '—'}</td>
+      <td class="py-3.5 px-4 text-zinc-400 text-sm">${e.company_name || '—'}</td>
+      <td class="py-3.5 px-4"><span class="${emailStatusClass(e)}">${emailStatusLabel(e)}</span></td>
+      <td class="py-3.5 px-4 text-zinc-500 text-sm">${e.follow_up_count}</td>
+      <td class="py-3.5 px-4 text-zinc-600 text-xs">${e.sent_at ? new Date(e.sent_at).toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'numeric' }) : '—'}</td>
+      <td class="py-3.5 px-4 text-zinc-600 text-xs truncate max-w-[140px]">${e.gmail_account || '—'}</td>
     </tr>
   `).join('');
 }
@@ -395,38 +396,36 @@ function filterEmails(filter) {
   document.getElementById('emailsBody').innerHTML = renderEmails(filtered);
 
   document.querySelectorAll('[id^="filter-"]').forEach(btn => {
-    btn.className = btn.className
-      .replace('bg-blue-600 text-white border-blue-600', 'bg-white text-gray-600 border-gray-200 hover:border-blue-300');
+    btn.className = FILTER_INACTIVE;
   });
   const active = document.getElementById(`filter-${filter}`);
-  if (active) active.className = active.className
-    .replace('bg-white text-gray-600 border-gray-200 hover:border-blue-300', 'bg-blue-600 text-white border-blue-600');
+  if (active) active.className = FILTER_ACTIVE;
 }
 
 function statBox(label, value, color) {
   return `
-    <div class="bg-white border border-gray-200 rounded-xl p-4 text-center">
-      <p class="text-2xl font-bold ${color}">${value}</p>
-      <p class="text-xs text-gray-400 mt-1">${label}</p>
+    <div class="bg-[#121218] border border-white/[0.06] rounded-2xl p-4 text-center">
+      <p class="text-3xl font-bold ${color} tracking-tight">${value}</p>
+      <p class="text-[11px] text-zinc-500 mt-1 font-medium">${label}</p>
     </div>`;
 }
 
 function statusBadgeClass(status) {
   const map = {
-    active:    'text-xs font-semibold bg-green-50 text-green-700 border border-green-200 rounded-full px-3 py-0.5',
-    paused:    'text-xs font-semibold bg-yellow-50 text-yellow-700 border border-yellow-200 rounded-full px-3 py-0.5',
-    completed: 'text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-200 rounded-full px-3 py-0.5',
+    active:    'text-xs font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/25 rounded-full px-3.5 py-1.5',
+    paused:    'text-xs font-semibold bg-amber-500/10 text-amber-400 border border-amber-500/25 rounded-full px-3.5 py-1.5',
+    completed: 'text-xs font-semibold bg-sky-500/10 text-sky-400 border border-sky-500/25 rounded-full px-3.5 py-1.5',
   };
-  return map[status] || 'text-xs font-semibold bg-gray-100 text-gray-600 border border-gray-200 rounded-full px-3 py-0.5';
+  return map[status] || 'text-xs font-semibold bg-white/5 text-zinc-500 border border-white/10 rounded-full px-3.5 py-1.5';
 }
 
 function emailStatusClass(e) {
-  if (e.has_reply)            return 'text-xs font-semibold bg-purple-50 text-purple-700 border border-purple-200 rounded-full px-2 py-0.5';
-  if (e.is_bounced)           return 'text-xs font-semibold bg-red-50 text-red-600 border border-red-200 rounded-full px-2 py-0.5';
-  if (e.status === 'sent')    return 'text-xs font-semibold bg-green-50 text-green-700 border border-green-200 rounded-full px-2 py-0.5';
-  if (e.status === 'pending') return 'text-xs font-semibold bg-blue-50 text-blue-600 border border-blue-200 rounded-full px-2 py-0.5';
-  if (e.status === 'failed')  return 'text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200 rounded-full px-2 py-0.5';
-  return 'text-xs font-semibold bg-gray-100 text-gray-500 border border-gray-200 rounded-full px-2 py-0.5';
+  if (e.has_reply)            return 'text-[11px] font-semibold bg-violet-500/10 text-violet-300 border border-violet-500/25 rounded-full px-2.5 py-1';
+  if (e.is_bounced)           return 'text-[11px] font-semibold bg-red-500/10 text-red-400 border border-red-500/25 rounded-full px-2.5 py-1';
+  if (e.status === 'sent')    return 'text-[11px] font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/25 rounded-full px-2.5 py-1';
+  if (e.status === 'pending') return 'text-[11px] font-semibold bg-sky-500/10 text-sky-400 border border-sky-500/25 rounded-full px-2.5 py-1';
+  if (e.status === 'failed')  return 'text-[11px] font-semibold bg-amber-500/10 text-amber-400 border border-amber-500/25 rounded-full px-2.5 py-1';
+  return 'text-[11px] font-semibold bg-white/5 text-zinc-400 border border-white/10 rounded-full px-2.5 py-1';
 }
 
 function emailStatusLabel(e) {

@@ -2,70 +2,71 @@
 
 @section('content')
 
-<div class="mb-6">
-  <h1 class="text-2xl font-bold">{{ isset($template) ? 'Edit Template' : 'New Template' }}</h1>
-  <p class="text-gray-500 text-sm mt-1">
+<div class="mb-8">
+  <h1 class="text-3xl font-bold text-white tracking-tight">{{ isset($template) ? 'Edit Template' : 'New Template' }}</h1>
+  <p class="text-zinc-500 text-sm mt-1.5">
     Available variables:
-    <code class="bg-gray-100 px-1 rounded">{first_name}</code>
-    <code class="bg-gray-100 px-1 rounded">{company}</code>
-    <code class="bg-gray-100 px-1 rounded">{domain}</code>
-    <code class="bg-gray-100 px-1 rounded">{price}</code>
-    <code class="bg-gray-100 px-1 rounded">{your_name}</code>
+    <code class="bg-[#0e0e14] px-1.5 py-0.5 rounded-lg border border-white/10 text-[#a78bfa] font-mono text-xs">{first_name}</code>
+    <code class="bg-[#0e0e14] px-1.5 py-0.5 rounded-lg border border-white/10 text-[#a78bfa] font-mono text-xs">{company}</code>
+    <code class="bg-[#0e0e14] px-1.5 py-0.5 rounded-lg border border-white/10 text-[#a78bfa] font-mono text-xs">{domain}</code>
+    <code class="bg-[#0e0e14] px-1.5 py-0.5 rounded-lg border border-white/10 text-[#a78bfa] font-mono text-xs">{price}</code>
+    <code class="bg-[#0e0e14] px-1.5 py-0.5 rounded-lg border border-white/10 text-[#a78bfa] font-mono text-xs">{your_name}</code>
   </p>
 </div>
 
-<div class="bg-white border border-gray-200 rounded-xl p-6 max-w-3xl">
+<div class="bg-[#121218] border border-white/[0.06] rounded-2xl p-7 max-w-3xl">
   <form method="POST"
         action="{{ isset($template) ? route('templates.update', $template) : route('templates.store') }}">
     @csrf
     @if(isset($template)) @method('PUT') @endif
 
-    <div class="grid grid-cols-2 gap-4 mb-4">
+    <div class="grid grid-cols-2 gap-4 mb-5">
       <div>
-        <label class="block text-sm font-medium text-gray-700 mb-1">Template name</label>
+        <label class="block text-sm font-medium text-zinc-300 mb-1.5">Template name</label>
         <input type="text" name="name" value="{{ old('name', $template->name ?? '') }}"
-               class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-gray-400"
+               class="w-full bg-[#0e0e14] border border-white/10 rounded-xl px-3.5 py-2.5 text-sm text-zinc-200 placeholder-zinc-600 outline-none focus:border-[#7c6ef7]/60 focus:ring-1 focus:ring-[#7c6ef7]/30 transition"
                placeholder="e.g. Domain Outreach v1">
       </div>
       <div>
-        <label class="block text-sm font-medium text-gray-700 mb-1">Category</label>
+        <label class="block text-sm font-medium text-zinc-300 mb-1.5">Category</label>
         <select name="category"
-                class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-gray-400">
+                class="w-full bg-[#0e0e14] border border-white/10 rounded-xl px-3.5 py-2.5 text-sm text-zinc-200 outline-none focus:border-[#7c6ef7]/60 transition">
           <option value="initial"   {{ old('category', $template->category ?? '') === 'initial'   ? 'selected' : '' }}>Initial email</option>
           <option value="follow_up" {{ old('category', $template->category ?? '') === 'follow_up' ? 'selected' : '' }}>Follow up</option>
         </select>
       </div>
     </div>
 
-    <div class="mb-4">
-      <label class="block text-sm font-medium text-gray-700 mb-1">Subject line</label>
+    <div class="mb-5">
+      <label class="block text-sm font-medium text-zinc-300 mb-1.5">Subject line</label>
       <input type="text" name="subject" value="{{ old('subject', $template->subject ?? '') }}"
-             class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-gray-400"
+             class="w-full bg-[#0e0e14] border border-white/10 rounded-xl px-3.5 py-2.5 text-sm text-zinc-200 placeholder-zinc-600 outline-none focus:border-[#7c6ef7]/60 focus:ring-1 focus:ring-[#7c6ef7]/30 transition"
              placeholder="e.g. {domain} — perfect for {company}">
     </div>
 
-    <div class="mb-4">
-      <label class="block text-sm font-medium text-gray-700 mb-1">Email body</label>
+    <div class="mb-5">
+      <label class="block text-sm font-medium text-zinc-300 mb-1.5">Email body</label>
       <textarea name="body" rows="12"
-                class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-gray-400 font-mono"
+                class="w-full bg-[#0e0e14] border border-white/10 rounded-xl px-3.5 py-2.5 text-sm text-zinc-200 placeholder-zinc-600 outline-none focus:border-[#7c6ef7]/60 focus:ring-1 focus:ring-[#7c6ef7]/30 transition font-mono"
                 placeholder="Hi {first_name},&#10;&#10;I noticed {company} doesn't own {domain}...">{{ old('body', $template->body ?? '') }}</textarea>
     </div>
 
-    <div class="mb-6 flex items-center gap-2">
+    <div class="mb-6 flex items-center gap-3">
       <input type="checkbox" name="has_price" id="has_price" value="1"
-             {{ old('has_price', $template->has_price ?? false) ? 'checked' : '' }}>
-      <label for="has_price" class="text-sm text-gray-700">
-        This template uses <code class="bg-gray-100 px-1 rounded">{price}</code> — prompt for price when creating campaign
+             {{ old('has_price', $template->has_price ?? false) ? 'checked' : '' }}
+             class="w-4 h-4 rounded accent-[#7c6ef7]">
+      <label for="has_price" class="text-sm text-zinc-300">
+        This template uses <code class="bg-[#0e0e14] px-1.5 py-0.5 rounded-lg border border-white/10 text-[#a78bfa] font-mono text-xs">{price}</code> — prompt for price when creating campaign
       </label>
     </div>
 
     <div class="flex gap-3">
       <button type="submit"
-              class="px-5 py-2 bg-gray-900 text-white rounded-lg text-sm font-medium hover:opacity-80">
+              class="px-5 py-2.5 bg-[#7c6ef7] text-white rounded-xl text-sm font-semibold hover:bg-[#8d80f9] transition">
         {{ isset($template) ? 'Update Template' : 'Save Template' }}
       </button>
       <a href="{{ route('templates.index') }}"
-         class="px-5 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200">
+         class="px-5 py-2.5 bg-white/5 text-zinc-300 rounded-xl text-sm font-medium border border-white/10 hover:bg-white/10 transition">
         Cancel
       </a>
     </div>

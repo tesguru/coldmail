@@ -2,144 +2,152 @@
 @section('title', 'Campaigns')
 @section('content')
 
-<div class="mb-6 flex items-center justify-between">
+<div class="mb-8 flex items-center justify-between">
   <div>
-    <h1 class="text-2xl font-bold text-gray-900">Campaigns</h1>
-    <p class="text-gray-500 text-sm mt-1">Create and manage your outbound campaigns</p>
+    <div class="flex items-center gap-2 text-[11px] font-semibold text-[#7c6ef7] uppercase tracking-widest mb-2">
+      <span class="w-1.5 h-1.5 rounded-full bg-[#7c6ef7] inline-block"></span>
+      Outbound
+    </div>
+    <h1 class="text-3xl font-bold text-white tracking-tight">Campaigns</h1>
+    <p class="text-zinc-500 text-sm mt-1.5">Create and manage your outbound campaigns</p>
   </div>
   <button onclick="showModal()"
-          class="inline-flex items-center px-4 py-2 bg-blue-600 text-white text-sm font-semibold rounded-lg hover:bg-blue-700 transition">
-    + New Campaign
+          class="inline-flex items-center gap-2 px-5 py-2.5 bg-[#7c6ef7] text-white text-sm font-semibold rounded-xl hover:bg-[#8d80f9] transition">
+    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" d="M12 4v16m8-8H4"/></svg>
+    New Campaign
   </button>
 </div>
 
 <div id="campaignsList">
-  <div class="flex items-center justify-center py-16 text-gray-400">
+  <div class="flex items-center justify-center py-16 text-zinc-500">
     <div class="spinner mr-3"></div> Loading campaigns...
   </div>
 </div>
 
 <!-- CREATE MODAL -->
-<div id="createModal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40">
-  <div class="bg-white rounded-2xl shadow-xl border border-gray-200 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+<div id="createModal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
+  <div class="bg-[#121218] rounded-3xl border border-white/[0.08] w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl">
 
-    <div class="flex items-center justify-between p-6 border-b border-gray-200 sticky top-0 bg-white rounded-t-2xl">
-      <h2 class="text-lg font-semibold text-gray-900">New Campaign</h2>
-      <button onclick="hideModal()" class="text-gray-400 hover:text-gray-600 text-2xl leading-none">×</button>
+    <div class="flex items-center justify-between p-6 border-b border-white/[0.06] sticky top-0 bg-[#121218] rounded-t-3xl z-10">
+      <div>
+        <h2 class="text-lg font-bold text-white">New Campaign</h2>
+        <p class="text-xs text-zinc-500 mt-0.5">Split recipients smartly across your sending accounts</p>
+      </div>
+      <button onclick="hideModal()"
+              class="w-8 h-8 flex items-center justify-center text-zinc-500 hover:text-white hover:bg-white/5 rounded-xl transition text-lg leading-none">×</button>
     </div>
 
-    <div class="p-6 space-y-5">
+    <div class="p-6 space-y-6">
 
       <div>
-        <label class="block text-sm font-medium text-gray-700 mb-1">Campaign Name * <span class="text-gray-400 font-normal">(must be unique)</span></label>
+        <label class="block text-sm font-medium text-zinc-300 mb-1.5">Campaign Name <span class="text-zinc-600 font-normal">(must be unique)</span></label>
         <input type="text" id="campName" placeholder="e.g. LagosBusiness.com Outreach"
-               class="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-200">
+               class="w-full bg-[#0e0e14] border border-white/10 rounded-xl px-3.5 py-2.5 text-sm text-zinc-200 placeholder-zinc-600 outline-none focus:border-[#7c6ef7]/60 focus:ring-1 focus:ring-[#7c6ef7]/30 transition">
       </div>
 
       <div class="grid grid-cols-2 gap-4">
         <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">Domain *</label>
+          <label class="block text-sm font-medium text-zinc-300 mb-1.5">Domain</label>
           <input type="text" id="campDomain" placeholder="LagosBusiness.com"
-                 class="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-200">
+                 class="w-full bg-[#0e0e14] border border-white/10 rounded-xl px-3.5 py-2.5 text-sm text-zinc-200 placeholder-zinc-600 outline-none focus:border-[#7c6ef7]/60 focus:ring-1 focus:ring-[#7c6ef7]/30 transition">
         </div>
 
         <div id="campPriceWrapper" class="hidden">
-          <label class="block text-sm font-medium text-gray-700 mb-1">
-            Price *
-            <span class="ml-1 text-xs font-normal text-amber-600 bg-amber-50 border border-amber-200 rounded-full px-2 py-0.5">
+          <label class="block text-sm font-medium text-zinc-300 mb-1.5">
+            Price
+            <span class="ml-1.5 text-[11px] font-medium text-amber-400 bg-amber-500/10 border border-amber-500/25 rounded-full px-2 py-0.5">
               required by template
             </span>
           </label>
           <input type="text" id="campPrice" placeholder="$2,499"
-                 class="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-200">
+                 class="w-full bg-[#0e0e14] border border-white/10 rounded-xl px-3.5 py-2.5 text-sm text-zinc-200 placeholder-zinc-600 outline-none focus:border-[#7c6ef7]/60 focus:ring-1 focus:ring-[#7c6ef7]/30 transition">
         </div>
       </div>
 
       <div>
-        <label class="block text-sm font-medium text-gray-700 mb-1">Your Name *</label>
+        <label class="block text-sm font-medium text-zinc-300 mb-1.5">Your Name</label>
         <input type="text" id="campYourName" placeholder="e.g. Emeka"
-               class="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-200">
+               class="w-full bg-[#0e0e14] border border-white/10 rounded-xl px-3.5 py-2.5 text-sm text-zinc-200 placeholder-zinc-600 outline-none focus:border-[#7c6ef7]/60 focus:ring-1 focus:ring-[#7c6ef7]/30 transition">
       </div>
 
-      <!-- ── FACEBOOK PAGES — add as many as you want ── -->
+      <!-- ── FACEBOOK PAGES ── -->
       <div>
         <div class="flex items-center justify-between mb-2">
           <div>
-            <label class="block text-sm font-medium text-gray-700">Facebook Pages</label>
-            <p class="text-xs text-gray-400">Optional — for manual outreach when no email</p>
+            <label class="block text-sm font-medium text-zinc-300">Facebook Pages</label>
+            <p class="text-xs text-zinc-600">Optional — manual outreach when no email</p>
           </div>
           <button type="button" onclick="addLink('facebook')"
-                  class="text-xs font-semibold text-blue-600 bg-blue-50 border border-blue-200 rounded-full px-3 py-1 hover:bg-blue-100 transition">
+                  class="text-xs font-semibold text-[#a78bfa] bg-[#7c6ef7]/15 border border-[#7c6ef7]/25 rounded-full px-3.5 py-1.5 hover:bg-[#7c6ef7]/25 transition">
             + Add Page
           </button>
         </div>
         <div id="facebookLinks" class="space-y-2">
-          <!-- rows injected here by addLink() -->
         </div>
-        <p id="facebookEmpty" class="text-xs text-gray-400 italic py-1">No Facebook pages added yet</p>
+        <p id="facebookEmpty" class="text-xs text-zinc-600 italic py-1.5">No Facebook pages added yet</p>
       </div>
 
-      <!-- ── WEBSITES — add as many as you want ── -->
+      <!-- ── WEBSITES ── -->
       <div>
         <div class="flex items-center justify-between mb-2">
           <div>
-            <label class="block text-sm font-medium text-gray-700">Websites / Contact Forms</label>
-            <p class="text-xs text-gray-400">Optional — visit contact form if no email reply</p>
+            <label class="block text-sm font-medium text-zinc-300">Websites / Contact Forms</label>
+            <p class="text-xs text-zinc-600">Optional — visit contact form if no email reply</p>
           </div>
           <button type="button" onclick="addLink('website')"
-                  class="text-xs font-semibold text-gray-600 bg-gray-100 border border-gray-200 rounded-full px-3 py-1 hover:bg-gray-200 transition">
+                  class="text-xs font-semibold text-zinc-400 bg-white/5 border border-white/10 rounded-full px-3.5 py-1.5 hover:bg-white/10 transition">
             + Add Website
           </button>
         </div>
         <div id="websiteLinks" class="space-y-2">
-          <!-- rows injected here by addLink() -->
         </div>
-        <p id="websiteEmpty" class="text-xs text-gray-400 italic py-1">No websites added yet</p>
+        <p id="websiteEmpty" class="text-xs text-zinc-600 italic py-1.5">No websites added yet</p>
       </div>
 
       <div>
-        <div class="flex items-center justify-between mb-1">
-          <label class="block text-sm font-medium text-gray-700">Recipients * <span class="text-gray-400 font-normal">(one per line)</span></label>
-          <span id="recipientCount" class="text-xs font-semibold bg-gray-100 text-gray-600 rounded-full px-2.5 py-0.5">0 emails</span>
+        <div class="flex items-center justify-between mb-1.5">
+          <label class="block text-sm font-medium text-zinc-300">Recipients <span class="text-zinc-600 font-normal">(one per line)</span></label>
+          <span id="recipientCount" class="text-xs font-semibold bg-white/5 text-zinc-500 border border-white/10 rounded-full px-2.5 py-1">0 emails</span>
         </div>
         <textarea id="campRecipients" rows="6"
-                  class="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-200 font-mono"
+                  class="w-full bg-[#0e0e14] border border-white/10 rounded-xl px-3.5 py-2.5 text-sm text-zinc-200 placeholder-zinc-600 outline-none focus:border-[#7c6ef7]/60 focus:ring-1 focus:ring-[#7c6ef7]/30 transition font-mono"
                   placeholder="john@lagosrealty.com&#10;sarah@abujafirm.com&#10;mike@kanotraders.com"
                   oninput="countRecipients()"
                   onpaste="handlePaste(event)"></textarea>
-        <div id="cleanFeedback" class="hidden mt-1.5 text-xs px-3 py-2 rounded-lg bg-green-50 text-green-700 border border-green-200"></div>
+        <div id="cleanFeedback" class="hidden mt-1.5 text-xs px-3 py-2.5 rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/25"></div>
       </div>
 
       <div>
-        <label class="block text-sm font-medium text-gray-700 mb-2">Gmail Accounts * <span class="text-gray-400 font-normal">(select sending accounts)</span></label>
-        <div id="accountCheckboxes" class="space-y-2 bg-gray-50 rounded-xl p-3 border border-gray-200">
-          <p class="text-sm text-gray-400">Loading accounts...</p>
+        <label class="block text-sm font-medium text-zinc-300 mb-2">Gmail Accounts <span class="text-zinc-600 font-normal">(select sending accounts)</span></label>
+        <div id="accountCheckboxes" class="space-y-2 bg-white/[0.03] rounded-2xl p-3.5 border border-white/[0.06]">
+          <p class="text-sm text-zinc-500">Loading accounts...</p>
         </div>
       </div>
 
       <div>
-        <label class="block text-sm font-medium text-gray-700 mb-2">Split Mode *</label>
+        <label class="block text-sm font-medium text-zinc-300 mb-1.5">Split Mode</label>
+        <p class="text-xs text-zinc-600 mb-2.5">Each recipient is sent by exactly one selected account — no double sends.</p>
         <div class="flex gap-3">
           <button onclick="setSplitMode('equal')" id="splitEqual"
-                  class="flex-1 py-2.5 rounded-lg text-sm font-semibold border-2 border-blue-600 bg-blue-50 text-blue-700">
+                  class="flex-1 py-3 rounded-xl text-sm font-semibold border bg-[#7c6ef7] text-white border-[#7c6ef7] shadow-lg shadow-[#7c6ef7]/20 transition">
             Equal Split
           </button>
           <button onclick="setSplitMode('custom')" id="splitCustom"
-                  class="flex-1 py-2.5 rounded-lg text-sm font-semibold border-2 border-gray-200 bg-white text-gray-500">
+                  class="flex-1 py-3 rounded-xl text-sm font-semibold border bg-[#17171f] text-zinc-500 border-white/10 hover:border-white/20 transition">
             Custom Split
           </button>
         </div>
       </div>
 
       <button onclick="previewSplit()"
-              class="w-full py-2.5 rounded-lg text-sm font-semibold bg-purple-50 text-purple-700 border border-purple-200 hover:bg-purple-100 transition">
+              class="w-full py-3 rounded-xl text-sm font-semibold bg-[#7c6ef7]/15 text-[#a78bfa] border border-[#7c6ef7]/25 hover:bg-[#7c6ef7]/25 transition">
         Preview Split Distribution
       </button>
 
       <div id="splitPreview" class="hidden"></div>
 
       <button onclick="createCampaign()" id="createBtn"
-              class="w-full py-3 rounded-lg text-base font-semibold bg-green-600 text-white hover:bg-green-700 transition">
+              class="w-full py-3.5 rounded-xl text-base font-bold bg-emerald-500 hover:bg-emerald-400 text-white transition">
         Create Campaign & Start Sending
       </button>
     </div>
@@ -151,6 +159,9 @@
 <script>
 let splitMode   = 'equal';
 let allAccounts = [];
+
+const SPLIT_ACTIVE    = 'flex-1 py-3 rounded-xl text-sm font-semibold border bg-[#7c6ef7] text-white border-[#7c6ef7] shadow-lg shadow-[#7c6ef7]/20 transition';
+const SPLIT_INACTIVE  = 'flex-1 py-3 rounded-xl text-sm font-semibold border bg-[#17171f] text-zinc-500 border-white/10 hover:border-white/20 transition';
 
 document.addEventListener('DOMContentLoaded', () => {
   loadCampaigns();
@@ -175,7 +186,6 @@ async function showModal() {
 // ── Hide modal and reset everything ──
 function hideModal() {
   document.getElementById('createModal').classList.add('hidden');
-  // Clear link rows
   document.getElementById('facebookLinks').innerHTML = '';
   document.getElementById('websiteLinks').innerHTML  = '';
   document.getElementById('facebookEmpty').style.display = '';
@@ -192,7 +202,6 @@ function addLink(type) {
     ? 'https://facebook.com/businesspage'
     : 'https://theirbusiness.com/contact';
 
-  // Hide the "none added yet" label
   emptyLabel.style.display = 'none';
 
   const row       = document.createElement('div');
@@ -203,9 +212,9 @@ function addLink(type) {
     <input type="url"
            placeholder="${placeholder}"
            data-link-type="${type}"
-           class="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-200">
+           class="flex-1 bg-[#0e0e14] border border-white/10 rounded-xl px-3.5 py-2.5 text-sm text-zinc-200 placeholder-zinc-600 outline-none focus:border-[#7c6ef7]/60 focus:ring-1 focus:ring-[#7c6ef7]/30 transition">
     <button type="button" onclick="removeLink('${id}', '${type}')"
-            class="text-gray-400 hover:text-red-500 transition text-xl leading-none font-bold flex-shrink-0">
+            class="text-zinc-600 hover:text-red-400 transition text-xl leading-none font-bold flex-shrink-0">
       ×
     </button>
   `;
@@ -217,7 +226,6 @@ function removeLink(rowId, type) {
   const row = document.getElementById(rowId);
   if (row) row.remove();
 
-  // If no more rows, show the empty label again
   const container  = document.getElementById(type === 'facebook' ? 'facebookLinks' : 'websiteLinks');
   const emptyLabel = document.getElementById(type === 'facebook' ? 'facebookEmpty' : 'websiteEmpty');
   if (container.children.length === 0) {
@@ -264,7 +272,7 @@ function cleanRecipients() {
   document.getElementById('campRecipients').value = valid.join('\n');
   const countEl = document.getElementById('recipientCount');
   countEl.textContent = `${valid.length} emails`;
-  countEl.className   = `text-xs font-semibold rounded-full px-2.5 py-0.5 ${valid.length > 0 ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-600'}`;
+  countEl.className   = `text-xs font-semibold rounded-full px-2.5 py-1 border ${valid.length > 0 ? 'bg-[#7c6ef7]/15 text-[#a78bfa] border-[#7c6ef7]/25' : 'bg-red-500/10 text-red-400 border-red-500/25'}`;
 
   const parts = [`✅ ${valid.length} valid`];
   if (dupes > 0)   parts.push(`${dupes} duplicates removed`);
@@ -288,11 +296,14 @@ async function loadCampaigns() {
 
   if (!res.campaigns?.length) {
     el.innerHTML = `
-      <div class="bg-white border border-gray-200 rounded-xl p-12 text-center">
-        <p class="text-gray-900 text-lg font-semibold mb-1">No campaigns yet</p>
-        <p class="text-gray-400 text-sm mb-6">Create your first outbound campaign to start sending</p>
+      <div class="bg-[#121218] border border-white/[0.06] rounded-3xl p-14 text-center">
+        <div class="w-16 h-16 mx-auto mb-5 rounded-2xl bg-[#7c6ef7]/10 border border-[#7c6ef7]/25 flex items-center justify-center">
+          <svg class="w-7 h-7 text-[#7c6ef7]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+        </div>
+        <p class="text-white text-lg font-bold mb-1">No campaigns yet</p>
+        <p class="text-zinc-500 text-sm mb-7">Create your first outbound campaign to start sending</p>
         <button onclick="showModal()"
-                class="inline-flex items-center px-5 py-2.5 bg-blue-600 text-white text-sm font-semibold rounded-lg hover:bg-blue-700">
+                class="inline-flex items-center gap-2 px-5 py-2.5 bg-[#7c6ef7] text-white text-sm font-semibold rounded-xl hover:bg-[#8d80f9] transition">
           + New Campaign
         </button>
       </div>`;
@@ -300,32 +311,32 @@ async function loadCampaigns() {
   }
 
   el.innerHTML = res.campaigns.map(c => `
-    <div class="bg-white border border-gray-200 rounded-xl p-5 mb-4 hover:border-blue-300 transition cursor-pointer"
+    <div class="bg-[#121218] border border-white/[0.06] rounded-2xl p-6 mb-4 hover:border-[#7c6ef7]/40 transition cursor-pointer"
          onclick="window.location='/campaigns/${c.id}'">
-      <div class="flex items-start justify-between mb-4">
+      <div class="flex items-start justify-between mb-5">
         <div>
-          <h3 class="font-semibold text-gray-900 text-base">${c.name}</h3>
-          <p class="text-sm text-gray-500 mt-0.5">${c.domain} · ${c.price}</p>
+          <h3 class="font-bold text-white text-base">${c.name}</h3>
+          <p class="text-sm text-zinc-500 mt-0.5">${c.domain} · ${c.price}</p>
         </div>
-        <div class="flex items-center gap-2">
+        <div class="flex items-center gap-2.5">
           ${statusBadge(c.status)}
           <button onclick="event.stopPropagation(); deleteCampaign(${c.id})"
-                  class="text-xs px-2.5 py-1.5 rounded-lg bg-red-50 text-red-600 border border-red-200 hover:bg-red-100 font-medium">
+                  class="text-xs px-3 py-1.5 rounded-xl bg-red-500/10 text-red-400 border border-red-500/25 hover:bg-red-500/20 font-medium transition">
             Delete
           </button>
         </div>
       </div>
 
       <div class="grid grid-cols-2 md:grid-cols-5 gap-3">
-        ${statBox('Total',      c.total_emails,    'text-blue-600')}
-        ${statBox('Sent',       c.sent_count,      'text-green-600')}
-        ${statBox('Replied',    c.replied_count,   'text-purple-600')}
-        ${statBox('Follow-ups', c.follow_up_count, 'text-amber-600')}
-        ${statBox('Bounced',    c.bounce_count,    'text-red-500')}
+        ${statBox('Total',      c.total_emails,    'text-sky-400')}
+        ${statBox('Sent',       c.sent_count,      'text-emerald-400')}
+        ${statBox('Replied',    c.replied_count,   'text-[#a78bfa]')}
+        ${statBox('Follow-ups', c.follow_up_count, 'text-amber-400')}
+        ${statBox('Bounced',    c.bounce_count,    'text-red-400')}
       </div>
 
       ${c.pending_count > 0 ? `
-        <div class="mt-3 flex items-center gap-2 text-sm text-blue-700 bg-blue-50 rounded-lg px-3 py-2 border border-blue-200">
+        <div class="mt-4 flex items-center gap-2.5 text-sm text-[#a78bfa] bg-[#7c6ef7]/10 rounded-xl px-4 py-2.5 border border-[#7c6ef7]/25">
           <div class="spinner"></div>
           ${c.pending_count} emails queued and sending
         </div>` : ''}
@@ -335,19 +346,19 @@ async function loadCampaigns() {
 
 function statBox(label, value, color) {
   return `
-    <div class="text-center bg-gray-50 rounded-lg p-3 border border-gray-100">
-      <p class="text-xl font-bold ${color}">${value}</p>
-      <p class="text-xs text-gray-400 mt-0.5">${label}</p>
+    <div class="text-center bg-white/[0.03] rounded-xl p-3.5 border border-white/[0.05]">
+      <p class="text-2xl font-bold ${color}">${value}</p>
+      <p class="text-[11px] text-zinc-500 mt-1 font-medium">${label}</p>
     </div>`;
 }
 
 function statusBadge(status) {
   const map = {
-    active:    'bg-green-50 text-green-700 border-green-200',
-    paused:    'bg-yellow-50 text-yellow-700 border-yellow-200',
-    completed: 'bg-blue-50 text-blue-700 border-blue-200',
+    active:    'bg-emerald-500/10 text-emerald-400 border-emerald-500/25',
+    paused:    'bg-amber-500/10 text-amber-400 border-amber-500/25',
+    completed: 'bg-sky-500/10 text-sky-400 border-sky-500/25',
   };
-  return `<span class="text-xs border rounded-full px-2.5 py-0.5 font-semibold ${map[status] || 'bg-gray-100 text-gray-600 border-gray-200'}">${status}</span>`;
+  return `<span class="text-[11px] font-semibold border rounded-full px-3 py-1 ${map[status] || 'bg-white/5 text-zinc-500 border-white/10'}">${status}</span>`;
 }
 
 // ── Load Gmail account checkboxes ──
@@ -357,17 +368,17 @@ async function loadAccountCheckboxes() {
   const el    = document.getElementById('accountCheckboxes');
 
   if (!allAccounts.length) {
-    el.innerHTML = `<p class="text-sm text-red-600">No Gmail accounts connected. <a href="{{ route('accounts.index') }}" class="underline">Add one first</a></p>`;
+    el.innerHTML = `<p class="text-sm text-red-400">No Gmail accounts connected. <a href="{{ route('accounts.index') }}" class="underline">Add one first</a></p>`;
     return;
   }
 
   el.innerHTML = allAccounts.map(a => `
-    <label class="flex items-center gap-3 bg-white p-3 rounded-lg border border-gray-200 cursor-pointer hover:border-blue-300 transition">
+    <label class="flex items-center gap-3 bg-[#0e0e14] p-3.5 rounded-xl border border-white/[0.06] cursor-pointer hover:border-[#7c6ef7]/40 transition">
       <input type="checkbox" name="gmail_accounts" value="${a.id}"
-             class="w-4 h-4 rounded accent-blue-600">
+             class="w-4 h-4 rounded accent-[#7c6ef7] focus:ring-[#7c6ef7]/30">
       <div class="flex-1 min-w-0">
-        <p class="text-sm font-medium text-gray-900">${a.email}</p>
-        <p class="text-xs text-gray-400">
+        <p class="text-sm font-semibold text-zinc-200">${a.email}</p>
+        <p class="text-xs text-zinc-500 mt-0.5">
           ${a.remaining} remaining today
           · ${a.token_status === 'valid' ? '✅ OAuth ready' : '❌ OAuth needed'}
           · ${a.has_script ? '✅ Script ready' : '⚠️ No script'}
@@ -383,11 +394,11 @@ function setSplitMode(mode) {
   const cu = document.getElementById('splitCustom');
 
   if (mode === 'equal') {
-    eq.className = eq.className.replace('border-gray-200 bg-white text-gray-500', 'border-blue-600 bg-blue-50 text-blue-700');
-    cu.className = cu.className.replace('border-blue-600 bg-blue-50 text-blue-700', 'border-gray-200 bg-white text-gray-500');
+    eq.className = SPLIT_ACTIVE;
+    cu.className = SPLIT_INACTIVE;
   } else {
-    cu.className = cu.className.replace('border-gray-200 bg-white text-gray-500', 'border-blue-600 bg-blue-50 text-blue-700');
-    eq.className = eq.className.replace('border-blue-600 bg-blue-50 text-blue-700', 'border-gray-200 bg-white text-gray-500');
+    cu.className = SPLIT_ACTIVE;
+    eq.className = SPLIT_INACTIVE;
   }
 }
 
@@ -412,14 +423,15 @@ async function previewSplit() {
   if (res.success) {
     el.classList.remove('hidden');
     el.innerHTML = `
-      <div class="bg-gray-50 border border-gray-200 rounded-xl p-4">
-        <p class="font-semibold text-gray-900 text-sm mb-3">
-          Split preview — ${res.total} emails · ~${res.total_time}
-        </p>
+      <div class="bg-[#0e0e14] border border-white/[0.08] rounded-2xl p-5">
+        <div class="flex items-center justify-between mb-4">
+          <p class="font-bold text-white text-sm">📊 Split preview</p>
+          <span class="text-xs font-semibold text-zinc-500">${res.total} emails · ~${res.total_time}</span>
+        </div>
         ${res.preview.map(p => `
-          <div class="flex items-center justify-between py-2 border-b border-gray-200 last:border-0">
-            <span class="text-sm text-gray-700">${p.account}</span>
-            <span class="text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-200 rounded-full px-2.5 py-0.5">${p.count} emails</span>
+          <div class="flex items-center justify-between py-2.5 border-b border-white/[0.05] last:border-0">
+            <span class="text-sm text-zinc-300 font-medium truncate mr-2">${p.account}</span>
+            <span class="text-xs font-bold bg-[#7c6ef7]/15 text-[#a78bfa] border border-[#7c6ef7]/25 rounded-full px-3 py-1">${p.count} emails</span>
           </div>
         `).join('')}
       </div>`;
@@ -436,8 +448,8 @@ async function createCampaign() {
   const yourName     = document.getElementById('campYourName').value.trim();
   const recipients   = document.getElementById('campRecipients').value;
   const accounts     = getSelectedAccounts();
-  const facebookLinks = getLinks('facebook');  // ← collect all Facebook URLs
-  const websiteLinks  = getLinks('website');   // ← collect all Website URLs
+  const facebookLinks = getLinks('facebook');
+  const websiteLinks  = getLinks('website');
 
   const priceRequired = !document.getElementById('campPriceWrapper').classList.contains('hidden');
 
@@ -457,8 +469,8 @@ async function createCampaign() {
     domain,
     price,
     your_name:       yourName,
-    facebook_links:  facebookLinks,  // ← sent to backend
-    website_links:   websiteLinks,   // ← sent to backend
+    facebook_links:  facebookLinks,
+    website_links:   websiteLinks,
     recipients,
     gmail_accounts:  accounts,
     split_mode:      splitMode,
