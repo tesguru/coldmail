@@ -71,79 +71,87 @@ async function loadAccounts() {
     return;
   }
 
-  el.innerHTML = res.accounts.map(a => `
-    <div class="bg-[#121218] border border-white/[0.06] rounded-2xl p-6 mb-4">
-      <div class="flex items-start justify-between gap-4">
-        <div class="flex items-center gap-3.5 min-w-0">
+  const rows = res.accounts.map(a => `
+    <tr class="border-b border-white/[0.04] hover:bg-white/[0.03] transition">
+      <td class="py-3 px-4">
+        <div class="flex items-center gap-3 min-w-0">
           ${a.avatar
-            ? `<img src="${a.avatar}" class="w-11 h-11 rounded-xl border border-white/10">`
-            : `<div class="w-11 h-11 rounded-xl bg-[#7c6ef7]/15 border border-[#7c6ef7]/25 flex items-center justify-center text-[#a78bfa] font-bold text-sm">${a.email[0].toUpperCase()}</div>`
+            ? `<img src="${a.avatar}" class="w-8 h-8 rounded-lg border border-white/10 flex-shrink-0">`
+            : `<div class="w-8 h-8 rounded-lg bg-[#7c6ef7]/15 border border-[#7c6ef7]/25 flex items-center justify-center text-[#a78bfa] font-bold text-xs flex-shrink-0">${a.email[0].toUpperCase()}</div>`
           }
           <div class="min-w-0">
-            <p class="font-bold text-white truncate">${a.name}</p>
-            <p class="text-sm text-zinc-500 truncate">${a.email}</p>
+            <p class="text-sm font-semibold text-white truncate">${a.name}</p>
+            <p class="text-xs text-zinc-500 truncate">${a.email}</p>
           </div>
         </div>
-        <div class="flex items-center gap-2 flex-wrap justify-end flex-shrink-0">
-          ${badge(a.is_active ? 'Active' : 'Inactive', a.is_active ? 'green' : 'red')}
-          ${badge(a.has_script ? 'Script ✓' : 'No Script', a.has_script ? 'violet' : 'yellow')}
-          ${badge(a.token_status === 'valid' ? 'OAuth ✓' : 'No OAuth', a.token_status === 'valid' ? 'green' : 'red')}
+      </td>
+      <td class="py-3 px-4">
+        <div class="flex items-center gap-1.5 flex-wrap">
+          <span class="${miniBadge(a.is_active)}">${a.is_active ? 'Active' : 'Off'}</span>
+          <span class="${miniBadge(a.has_script)}">${a.has_script ? 'Script' : 'No script'}</span>
+          <span class="${miniBadge(a.token_status === 'valid')}">${a.token_status === 'valid' ? 'OAuth' : 'No OAuth'}</span>
         </div>
-      </div>
-
-      <!-- Stats -->
-      <div class="grid grid-cols-3 gap-3 mt-5">
-        <div class="text-center bg-white/[0.03] rounded-xl p-3.5 border border-white/[0.05]">
-          <p class="text-2xl font-bold text-sky-400">${a.sent_today}</p>
-          <p class="text-[11px] text-zinc-500 mt-0.5 font-medium">Sent today</p>
-        </div>
-        <div class="text-center bg-white/[0.03] rounded-xl p-3.5 border border-white/[0.05]">
-          <p class="text-2xl font-bold text-white">${a.remaining}</p>
-          <p class="text-[11px] text-zinc-500 mt-0.5 font-medium">Remaining</p>
-        </div>
-        <div class="text-center bg-white/[0.03] rounded-xl p-3.5 border border-white/[0.05]">
-          <p class="text-2xl font-bold text-zinc-300">${a.total_sent}</p>
-          <p class="text-[11px] text-zinc-500 mt-0.5 font-medium">Total sent</p>
-        </div>
-      </div>
-
-      <!-- Actions -->
-      <div class="flex flex-wrap gap-2 mt-5 pt-5 border-t border-white/[0.05]">
-        <button onclick="openScriptModal(${a.id}, '${a.script_url || ''}')"
-                class="text-xs px-3.5 py-2 rounded-xl font-semibold bg-[#7c6ef7]/10 text-[#a78bfa] border border-[#7c6ef7]/25 hover:bg-[#7c6ef7]/20 transition">
-          🔗 ${a.has_script ? 'Update Script' : 'Set Script URL'}
-        </button>
-        ${a.has_script ? `
-          <button onclick="testAccount(${a.id}, this)"
-                  class="text-xs px-3.5 py-2 rounded-xl font-semibold bg-sky-500/10 text-sky-400 border border-sky-500/25 hover:bg-sky-500/20 transition">
-            🧪 Test Connection
+      </td>
+      <td class="py-3 px-4 text-sm font-bold text-sky-400">${a.sent_today}</td>
+      <td class="py-3 px-4 text-sm font-semibold text-zinc-300">${a.remaining}</td>
+      <td class="py-3 px-4 text-sm text-zinc-500">${a.total_sent}</td>
+      <td class="py-3 px-4">
+        <div class="flex items-center justify-end gap-1">
+          <button onclick="openScriptModal(${a.id}, '${a.script_url || ''}')" title="${a.has_script ? 'Update Script' : 'Set Script URL'}"
+                  class="w-8 h-8 flex items-center justify-center rounded-lg bg-[#7c6ef7]/10 text-[#a78bfa] border border-[#7c6ef7]/25 hover:bg-[#7c6ef7]/20 transition">
+            <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13.19 8.688a4.5 4.5 0 011.242 7.244l-4.5 4.5a4.5 4.5 0 01-6.364-6.364l1.757-1.757m13.35-.622l1.757-1.757a4.5 4.5 0 00-6.364-6.364l-4.5 4.5a4.5 4.5 0 001.242 7.244"/></svg>
           </button>
-        ` : ''}
-        <a href="{{ route('google.add-account') }}"
-           class="text-xs px-3.5 py-2 rounded-xl font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/25 hover:bg-emerald-500/20 transition">
-          🔄 ${a.token_status === 'valid' ? 'Reconnect OAuth' : 'Connect Gmail'}
-        </a>
-        <button onclick="toggleAccount(${a.id})"
-                class="text-xs px-3.5 py-2 rounded-xl font-semibold bg-white/5 text-zinc-400 border border-white/10 hover:bg-white/10 transition">
-          ${a.is_active ? '⏸ Deactivate' : '▶ Activate'}
-        </button>
-        <button onclick="deleteAccount(${a.id})"
-                class="text-xs px-3.5 py-2 rounded-xl font-semibold bg-red-500/10 text-red-400 border border-red-500/25 hover:bg-red-500/20 transition">
-          🗑️ Remove
-        </button>
-      </div>
-    </div>
+          ${a.has_script ? `
+            <button onclick="testAccount(${a.id}, this)" title="Test Connection"
+                    class="w-8 h-8 flex items-center justify-center rounded-lg bg-sky-500/10 text-sky-400 border border-sky-500/25 hover:bg-sky-500/20 transition">
+              <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" d="M9 3v6l-4.5 6v3h15v-3L15 9V3"/></svg>
+            </button>
+          ` : ''}
+          <a href="{{ route('google.add-account') }}" title="${a.token_status === 'valid' ? 'Reconnect OAuth' : 'Connect Gmail'}"
+             class="w-8 h-8 flex items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-400 border border-emerald-500/25 hover:bg-emerald-500/20 transition">
+            <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+          </a>
+          <button onclick="toggleAccount(${a.id})" title="${a.is_active ? 'Deactivate' : 'Activate'}"
+                  class="w-8 h-8 flex items-center justify-center rounded-lg bg-white/5 text-zinc-400 border border-white/10 hover:bg-white/10 transition">
+            <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="${a.is_active ? 'M6 4h4v16H6zM14 4h4v16h-4z' : 'M8 5v14l11-7z'}"/></svg>
+          </button>
+          <button onclick="deleteAccount(${a.id})" title="Remove"
+                  class="w-8 h-8 flex items-center justify-center rounded-lg bg-red-500/10 text-red-400 border border-red-500/25 hover:bg-red-500/20 transition">
+            <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+          </button>
+        </div>
+      </td>
+    </tr>
   `).join('');
+
+  el.innerHTML = `
+    <div class="bg-[#121218] border border-white/[0.06] rounded-2xl overflow-hidden">
+      <div class="flex items-center justify-between px-5 py-4 border-b border-white/[0.06]">
+        <h2 class="font-bold text-white">Accounts</h2>
+        <span class="text-xs text-zinc-600 font-medium">${res.accounts.length} total</span>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+          <thead class="bg-white/[0.03]">
+            <tr>
+              <th class="text-left py-3 px-4 text-[11px] font-semibold text-zinc-500 uppercase tracking-wider">Account</th>
+              <th class="text-left py-3 px-4 text-[11px] font-semibold text-zinc-500 uppercase tracking-wider">Status</th>
+              <th class="text-left py-3 px-4 text-[11px] font-semibold text-zinc-500 uppercase tracking-wider">Sent today</th>
+              <th class="text-left py-3 px-4 text-[11px] font-semibold text-zinc-500 uppercase tracking-wider">Remaining</th>
+              <th class="text-left py-3 px-4 text-[11px] font-semibold text-zinc-500 uppercase tracking-wider">Total sent</th>
+              <th class="text-right py-3 px-4 text-[11px] font-semibold text-zinc-500 uppercase tracking-wider">Actions</th>
+            </tr>
+          </thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>
+    </div>`;
 }
 
-function badge(text, color) {
-  const colors = {
-    green:  'bg-emerald-500/10 text-emerald-400 border-emerald-500/25',
-    red:    'bg-red-500/10 text-red-400 border-red-500/25',
-    violet: 'bg-[#7c6ef7]/10 text-[#a78bfa] border-[#7c6ef7]/25',
-    yellow: 'bg-amber-500/10 text-amber-400 border-amber-500/25',
-  };
-  return `<span class="text-[11px] font-semibold border rounded-full px-2.5 py-1 ${colors[color]}">${text}</span>`;
+function miniBadge(on) {
+  return on
+    ? 'text-[10px] font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/25 rounded-full px-2 py-0.5'
+    : 'text-[10px] font-semibold bg-white/5 text-zinc-500 border border-white/10 rounded-full px-2 py-0.5';
 }
 
 function openScriptModal(id, currentUrl) {
@@ -167,13 +175,12 @@ async function saveScriptUrl() {
 }
 
 async function testAccount(id, btn) {
-  const orig = btn.textContent;
-  btn.textContent = '⏳ Testing...';
+  const orig = btn.innerHTML;
+  btn.innerHTML = `<div class="spinner"></div>`;
   btn.disabled = true;
   const res = await apiPost(`/api/gmail-accounts/${id}/test`, {});
-  btn.textContent = res.message;
+  btn.innerHTML = orig;
   btn.disabled = false;
-  setTimeout(() => btn.textContent = orig, 3000);
   toast(res.success ? 'Connected!' : 'Failed', res.message, res.success ? 'success' : 'error');
 }
 
