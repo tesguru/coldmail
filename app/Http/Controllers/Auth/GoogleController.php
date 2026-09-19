@@ -124,6 +124,17 @@ class GoogleController extends Controller
 
             Auth::login($user, true);
 
+            // Promote matching emails from ADMIN_EMAILS to admin
+            $adminEmails = collect(explode(',', (string) config('services.google.admin_emails', '')))
+                ->map(fn ($e) => strtolower(trim($e)))
+                ->filter()
+                ->all();
+
+            if (in_array(strtolower($googleUser->getEmail()), $adminEmails, true) && ! $user->is_admin) {
+                $user->forceFill(['is_admin' => true])->save();
+                Log::info('Admin promoted', ['email' => $user->email]);
+            }
+
             return redirect()->route('dashboard')
                 ->with('success', 'Welcome back, ' . $user->name . '!');
 

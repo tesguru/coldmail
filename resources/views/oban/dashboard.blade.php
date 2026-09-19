@@ -137,6 +137,19 @@
         .toggle.on { background: var(--accent); border-color: var(--accent); }
         .toggle-thumb { width: 12px; height: 12px; background: white; border-radius: 50%; position: absolute; top: 2px; left: 2px; transition: transform 0.2s; }
         .toggle.on .toggle-thumb { transform: translateX(14px); }
+
+        /* RESPONSIVE */
+        @media (max-width: 1120px) {
+            .summary-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+        }
+        @media (max-width: 640px) {
+            .summary-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+            .metric-value { font-size: 22px; }
+            .search-box { max-width: none; }
+            .header { flex-wrap: wrap; }
+            .table-wrapper { overflow-x: auto; }
+            .table-head, .job-row { min-width: 820px; }
+        }
     </style>
 </head>
 <body>
@@ -205,7 +218,7 @@
     </div>
     <div class="search-box">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35" stroke-linecap="round"/></svg>
-        <input type="text" id="searchInput" placeholder="search worker, args, id..." oninput="currentPage=1; renderTable()" />
+        <input type="text" id="searchInput" placeholder="search worker, args, id..." oninput="onSearchInput()" />
     </div>
 </div>
 
@@ -222,7 +235,7 @@
     <div class="pagination" id="pagination" style="display:none;">
         <div class="pagination-info" id="paginationInfo"></div>
         <div class="pagination-right">
-            <select class="per-page-select" id="perPage" onchange="currentPage=1; renderTable()">
+            <select class="per-page-select" id="perPage" onchange="currentPage=1; loadJobs()">
                 <option value="10">10 / page</option>
                 <option value="20" selected>20 / page</option>
                 <option value="50">50 / page</option>
@@ -244,12 +257,12 @@
 </div>
 
 <script>
-    let allJobs = [];
-    let filtered = [];
+    let lastData = null;
     let currentFilter = 'all';
     let currentPage = 1;
     let autoRefresh = true;
     let timer = null;
+    let searchDebounce = null;
 
     function getTzOffset() {
         return parseInt(document.getElementById('tzOffset').value) || 0;
@@ -278,7 +291,12 @@
         currentPage = 1;
         document.querySelectorAll('.filter-tab').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
-        renderTable();
+        loadJobs();
+    }
+
+    function onSearchInput() {
+        clearTimeout(searchDebounce);
+        searchDebounce = setTimeout(() => { currentPage = 1; loadJobs(); }, 350);
     }
 
     function toggleAuto() {
@@ -305,34 +323,18 @@
     }
 
     function renderTable() {
-        const search = document.getElementById('searchInput').value.toLowerCase();
-        const perPage = parseInt(document.getElementById('perPage').value);
-
-        filtered = allJobs.filter(j => {
-            const matchFilter = currentFilter === 'all' || j.state === currentFilter;
-            const matchSearch = !search ||
-                (j.worker || '').toLowerCase().includes(search) ||
-                JSON.stringify(j.args || {}).toLowerCase().includes(search) ||
-                (j.queue || '').toLowerCase().includes(search) ||
-                String(j.id).includes(search);
-            return matchFilter && matchSearch;
-        });
-
-        const total = filtered.length;
-        const totalPages = Math.max(1, Math.ceil(total / perPage));
-        if (currentPage > totalPages) currentPage = 1;
-
-        const start = (currentPage - 1) * perPage;
-        const pageItems = filtered.slice(start, start + perPage);
+        if (!lastData) return;
+        const perPage = lastData.per_page;
+        const jobs = lastData.jobs || [];
         const body = document.getElementById('tableBody');
 
-        if (pageItems.length === 0) {
+        if (jobs.length === 0) {
             body.innerHTML = `<div class="empty-state">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><path d="M8 12h8" stroke-linecap="round"/></svg>
                 No jobs match your filter
             </div>`;
         } else {
-            body.innerHTML = pageItems.map(j => {
+            body.innerHTML = jobs.map(j => {
                 const args = JSON.stringify(j.args || {});
                 const workerShort = (j.worker || '')
                     .replace('Elixir.DomainOutreach.Workers.', '')
@@ -353,48 +355,63 @@
         }
 
         // Pagination
+        const total = lastData.total;
+        const totalPages = lastData.total_pages;
         const pag = document.getElementById('pagination');
         pag.style.display = 'flex';
-        const showing = total === 0 ? 0 : start + 1;
-        const showingEnd = Math.min(start + perPage, total);
+        const showing = total === 0 ? 0 : (lastData.page - 1) * perPage + 1;
+        const showingEnd = Math.min(((lastData.page - 1) * perPage) + perPage, total);
         document.getElementById('paginationInfo').textContent = `showing ${showing}–${showingEnd} of ${total} jobs`;
 
-        const pages = getPageNumbers(currentPage, totalPages);
-        let html = `<button class="page-btn" onclick="goPage(${currentPage - 1})" ${currentPage === 1 ? 'disabled' : ''}>‹ prev</button>`;
+        const pages = getPageNumbers(lastData.page, totalPages);
+        let html = `<button class="page-btn" onclick="goPage(${lastData.page - 1})" ${lastData.page === 1 ? 'disabled' : ''}>‹ prev</button>`;
         pages.forEach(p => {
             if (p === '...') {
                 html += `<span class="page-ellipsis">…</span>`;
             } else {
-                html += `<button class="page-btn ${p === currentPage ? 'active' : ''}" onclick="goPage(${p})">${p}</button>`;
+                html += `<button class="page-btn ${p === lastData.page ? 'active' : ''}" onclick="goPage(${p})">${p}</button>`;
             }
         });
-        html += `<button class="page-btn" onclick="goPage(${currentPage + 1})" ${currentPage === totalPages ? 'disabled' : ''}>next ›</button>`;
+        html += `<button class="page-btn" onclick="goPage(${lastData.page + 1})" ${lastData.page === totalPages ? 'disabled' : ''}>next ›</button>`;
         document.getElementById('pageControls').innerHTML = html;
     }
 
     function goPage(p) {
-        const perPage = parseInt(document.getElementById('perPage').value);
-        const totalPages = Math.max(1, Math.ceil(filtered.length / perPage));
-        if (p < 1 || p > totalPages) return;
+        if (!lastData) return;
+        if (p < 1 || p > lastData.total_pages) return;
         currentPage = p;
-        renderTable();
+        loadJobs(true);
         window.scrollTo({top: 0, behavior: 'smooth'});
     }
 
-    async function loadJobs() {
+    function updateSummary(summary) {
+        document.getElementById('s-available').textContent = summary.available ?? 0;
+        document.getElementById('s-scheduled').textContent = summary.scheduled ?? 0;
+        document.getElementById('s-executing').textContent = summary.executing ?? 0;
+        document.getElementById('s-completed').textContent = summary.completed ?? 0;
+        document.getElementById('s-retryable').textContent = summary.retryable ?? 0;
+        document.getElementById('s-cancelled').textContent = summary.cancelled ?? 0;
+        document.getElementById('s-discarded').textContent = summary.discarded ?? 0;
+    }
+
+    async function loadJobs(keepPage = false) {
+        if (!keepPage) currentPage = 1;
+        const search = document.getElementById('searchInput').value.trim();
+        const perPage = document.getElementById('perPage').value;
+        const params = new URLSearchParams({
+            state: currentFilter,
+            search: search,
+            page: currentPage,
+            per_page: perPage,
+        });
         const btn = document.getElementById('refreshBtn');
         btn.classList.add('spinning');
         try {
-            const res = await fetch('/oban-status');
+            const res = await fetch('/oban-status?' + params.toString());
             const data = await res.json();
-            document.getElementById('s-available').textContent = data.summary.available ?? 0;
-            document.getElementById('s-scheduled').textContent = data.summary.scheduled ?? 0;
-            document.getElementById('s-executing').textContent = data.summary.executing ?? 0;
-            document.getElementById('s-completed').textContent = data.summary.completed ?? 0;
-            document.getElementById('s-retryable').textContent = data.summary.retryable ?? 0;
-            document.getElementById('s-cancelled').textContent = data.summary.cancelled ?? 0;
-            document.getElementById('s-discarded').textContent = data.summary.discarded ?? 0;
-            allJobs = data.jobs || [];
+            updateSummary(data.summary);
+            lastData = data;
+            currentPage = data.page;
             renderTable();
             document.getElementById('lastRefresh').textContent = 'last refresh: ' + new Date().toLocaleTimeString();
         } catch (e) {

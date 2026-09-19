@@ -6,53 +6,13 @@ use App\Http\Controllers\GmailAccountController;
 use App\Http\Controllers\TemplateController;
 use App\Http\Controllers\CampaignController;
 use App\Http\Controllers\Internal\EmailDispatchController;
+use App\Http\Controllers\ObanStatusController;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/oban-dashboard', function () {
-    return view('oban.dashboard');
-})->name('oban-dashboard');
-
-
-
-
-
-
-Route::get('/oban-status', function () {
-    $jobs = \DB::table('oban_jobs')
-        ->orderBy('inserted_at', 'desc')
-        ->limit(20)
-        ->get()
-        ->map(function ($job) {
-            return [
-                'id'           => $job->id,
-                'state'        => $job->state,
-                'queue'        => $job->queue,
-                'worker'       => class_basename(str_replace('Elixir.', '', $job->worker)),
-                'args'         => json_decode($job->args),
-                'attempt'      => $job->attempt,
-                'max_attempts' => $job->max_attempts,
-                'inserted_at'  => $job->inserted_at,
-                'scheduled_at' => $job->scheduled_at,
-                'attempted_at' => $job->attempted_at,
-                'completed_at' => $job->completed_at,
-                'discarded_at' => $job->discarded_at,
-            ];
-        });
-
-    $summary = [
-        'available'  => \DB::table('oban_jobs')->where('state', 'available')->count(),
-        'scheduled'  => \DB::table('oban_jobs')->where('state', 'scheduled')->count(),
-        'executing'  => \DB::table('oban_jobs')->where('state', 'executing')->count(),
-        'completed'  => \DB::table('oban_jobs')->where('state', 'completed')->count(),
-        'retryable'  => \DB::table('oban_jobs')->where('state', 'retryable')->count(),
-        'discarded'  => \DB::table('oban_jobs')->where('state', 'discarded')->count(),
-        'cancelled'  => \DB::table('oban_jobs')->where('state', 'cancelled')->count(),
-    ];
-
-    return response()->json([
-        'summary' => $summary,
-        'jobs'    => $jobs,
-    ]);
+Route::middleware(['auth', 'admin'])->group(function () {
+    Route::get('/oban', [ObanStatusController::class, 'dashboard'])->name('oban.dashboard');
+    Route::get('/oban-dashboard', [ObanStatusController::class, 'dashboard'])->name('oban-dashboard');
+    Route::get('/oban-status', [ObanStatusController::class, 'status'])->name('oban.status');
 });
 
 
