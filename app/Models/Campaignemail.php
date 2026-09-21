@@ -20,6 +20,7 @@ class CampaignEmail extends Model
         'gmail_thread_id',
         'gmail_label_id',
         'status',
+        'send_attempts',
         'has_reply',
         'is_bounced',
         'replied_at',
@@ -30,10 +31,11 @@ class CampaignEmail extends Model
     ];
 
     protected $casts = [
-        'has_reply'  => 'boolean',
-        'is_bounced' => 'boolean',
-        'sent_at'    => 'datetime',
-        'replied_at' => 'datetime',
+        'has_reply'     => 'boolean',
+        'is_bounced'    => 'boolean',
+        'sent_at'       => 'datetime',
+        'replied_at'    => 'datetime',
+        'send_attempts' => 'integer',
     ];
 
     // ============================================================

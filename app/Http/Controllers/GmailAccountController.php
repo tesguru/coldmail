@@ -6,6 +6,7 @@ use App\Models\GmailAccount;
 use App\Services\AppScriptService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 
 class GmailAccountController extends Controller
 {
@@ -14,9 +15,15 @@ class GmailAccountController extends Controller
     // ============================================================
     public function index()
     {
+        $busyIds = DB::table('campaign_gmail_accounts as cga')
+            ->join('campaigns as c', 'c.id', '=', 'cga.campaign_id')
+            ->where('c.user_id', Auth::id())
+            ->whereIn('c.status', ['active', 'paused'])
+            ->pluck('cga.gmail_account_id');
+
         $accounts = GmailAccount::where('user_id', Auth::id())
             ->get()
-            ->map(function ($account) {
+            ->map(function ($account) use ($busyIds) {
                 return [
                     'id'           => $account->id,
                     'name'         => $account->name,
@@ -28,6 +35,7 @@ class GmailAccountController extends Controller
                     'daily_limit'  => $account->daily_limit,
                     'remaining'    => $account->remainingToday(),
                     'is_active'    => $account->is_active,
+                    'in_use'       => $busyIds->contains($account->id),
                     'token_status' => $account->google_token ? 'valid' : 'missing',
                     'has_script'   => !empty($account->script_url),
                 ];
