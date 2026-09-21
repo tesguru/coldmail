@@ -433,6 +433,52 @@ class CampaignController extends Controller
     }
 
     // ============================================================
+    // DELETE ONE PROSPECT EMAIL FROM A CAMPAIGN
+    // ============================================================
+    public function deleteEmail($campaignId, $emailId)
+    {
+        $campaign = Campaign::where('user_id', Auth::id())->findOrFail($campaignId);
+
+        $email = CampaignEmail::where('campaign_id', $campaign->id)
+            ->findOrFail($emailId);
+
+        // Cancel any Oban job still queued for this email
+        \DB::table('oban_jobs')
+            ->whereRaw("(args->>'campaign_email_id')::int = ?", [$email->id])
+            ->whereIn('state', ['available', 'scheduled', 'executing'])
+            ->update(['state' => \DB::raw("'cancelled'::oban_job_state")]);
+
+        $accountId = $email->gmail_account_id;
+
+        $email->delete();
+
+        // Keep pivot allocation + campaign totals consistent
+        if ($accountId) {
+            $allocated = (int) \DB::table('campaign_gmail_accounts')
+                ->where('campaign_id', $campaign->id)
+                ->where('gmail_account_id', $accountId)
+                ->value('allocated_count') ?? 0;
+
+            \DB::table('campaign_gmail_accounts')
+                ->where('campaign_id', $campaign->id)
+                ->where('gmail_account_id', $accountId)
+                ->update([
+                    'allocated_count' => max(0, $allocated - 1),
+                    'updated_at'      => now(),
+                ]);
+        }
+
+        $campaign->decrement('total_emails');
+        $campaign->refreshStats();
+
+        return response()->json([
+            'success'      => true,
+            'message'      => 'Prospect removed.',
+            'total_emails' => $campaign->fresh()->total_emails,
+        ]);
+    }
+
+    // ============================================================
     // RETRY FAILED EMAILS
     // ============================================================
     public function retryFailed($id)

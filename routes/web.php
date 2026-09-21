@@ -58,6 +58,7 @@ Route::middleware('auth')->prefix('api')->group(function () {
     Route::delete('campaigns/{id}', [CampaignController::class, 'destroy']);
     Route::post('campaigns/{id}/follow-up', [CampaignController::class, 'sendFollowUp']);
     Route::post('campaigns/{id}/retry-failed', [CampaignController::class, 'retryFailed']);
+    Route::delete('campaigns/{campaignId}/emails/{emailId}', [CampaignController::class, 'deleteEmail']);
     Route::post('campaigns/preview-split', [CampaignController::class, 'previewSplit']);
     Route::post('campaigns/{id}/follow-up', [CampaignController::class, 'sendFollowUp']);
 Route::get('campaigns/{id}/follow-up-status', [CampaignController::class, 'followUpStatus']);

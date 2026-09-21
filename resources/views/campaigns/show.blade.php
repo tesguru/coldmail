@@ -287,6 +287,7 @@ async function loadCampaign() {
               <th class="text-left py-3.5 px-4 text-[11px] font-semibold text-zinc-500 uppercase tracking-wider">Follow-ups</th>
               <th class="text-left py-3.5 px-4 text-[11px] font-semibold text-zinc-500 uppercase tracking-wider">Sent at</th>
               <th class="text-left py-3.5 px-4 text-[11px] font-semibold text-zinc-500 uppercase tracking-wider">Account</th>
+              <th class="text-right py-3.5 px-4 text-[11px] font-semibold text-zinc-500 uppercase tracking-wider">Action</th>
             </tr>
           </thead>
           <tbody id="emailsBody">
@@ -372,7 +373,7 @@ function filterBtn(filter, label, count) {
 
 function renderEmails(emails) {
   if (!emails.length) {
-    return `<tr><td colspan="7" class="text-center py-10 text-zinc-500 text-sm">No prospects found</td></tr>`;
+    return `<tr><td colspan="8" class="text-center py-10 text-zinc-500 text-sm">No prospects found</td></tr>`;
   }
   return emails.map(e => `
     <tr class="border-b border-white/[0.04] hover:bg-white/[0.03] transition">
@@ -383,8 +384,24 @@ function renderEmails(emails) {
       <td class="py-3.5 px-4 text-zinc-500 text-sm">${e.follow_up_count}</td>
       <td class="py-3.5 px-4 text-zinc-600 text-xs">${e.sent_at ? new Date(e.sent_at).toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'numeric' }) : '—'}</td>
       <td class="py-3.5 px-4 text-zinc-600 text-xs truncate max-w-[140px]">${e.gmail_account || '—'}</td>
+      <td class="py-3.5 px-4 text-right">
+        <button onclick="event.stopPropagation(); deleteProspect(${e.id}, '${e.to_email.replace(/'/g, "\\'")}')"
+                class="text-zinc-600 hover:text-red-400 transition text-lg leading-none font-bold p-1"
+                title="Remove this prospect">×</button>
+      </td>
     </tr>
   `).join('');
+}
+
+async function deleteProspect(id, email) {
+  if (!confirm(`Remove ${email} from this campaign?\nAny queued send for them will be cancelled.`)) return;
+  const res = await apiDelete(`/api/campaigns/${CAMPAIGN_ID}/emails/${id}`);
+  if (res.success) {
+    toast('Removed', 'Prospect removed', 'success');
+    loadCampaign();
+  } else {
+    toast('Error', res.error, 'error');
+  }
 }
 
 function filterEmails(filter) {
