@@ -24,6 +24,12 @@ class Campaign extends Model
         'bounce_count',
     ];
 
+    protected $casts = [
+        'facebook_links' => 'array',
+        'website_links'  => 'array',
+        'total_emails'   => 'integer',
+    ];
+
     // ============================================================
     // RELATIONSHIPS
     // ============================================================
