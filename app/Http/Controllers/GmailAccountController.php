@@ -15,15 +15,35 @@ class GmailAccountController extends Controller
     // ============================================================
     public function index()
     {
-        $busyIds = DB::table('campaign_gmail_accounts as cga')
+        // Campaigns each account is actively working on (name + planned/pending volumes)
+        $activeCampaigns = DB::table('campaign_gmail_accounts as cga')
             ->join('campaigns as c', 'c.id', '=', 'cga.campaign_id')
             ->where('c.user_id', Auth::id())
             ->whereIn('c.status', ['active', 'paused'])
-            ->pluck('cga.gmail_account_id');
+            ->select('cga.gmail_account_id', 'c.name', 'cga.allocated_count')
+            ->get()
+            ->groupBy('gmail_account_id');
+
+        $pendingCounts = DB::table('campaign_emails as ce')
+            ->join('campaigns as c', 'c.id', '=', 'ce.campaign_id')
+            ->where('c.user_id', Auth::id())
+            ->whereIn('c.status', ['active', 'paused'])
+            ->where('ce.status', 'pending')
+            ->select('ce.gmail_account_id', DB::raw('COUNT(*) as total'))
+            ->groupBy('ce.gmail_account_id')
+            ->pluck('total', 'gmail_account_id');
 
         $accounts = GmailAccount::where('user_id', Auth::id())
             ->get()
-            ->map(function ($account) use ($busyIds) {
+            ->map(function ($account) use ($activeCampaigns, $pendingCounts) {
+                $working = collect($activeCampaigns->get($account->id, []))
+                    ->map(fn ($row) => [
+                        'name'      => $row->name,
+                        'allocated' => (int) $row->allocated_count,
+                        'pending'   => (int) ($pendingCounts[$account->id] ?? 0),
+                    ])
+                    ->values();
+
                 return [
                     'id'           => $account->id,
                     'name'         => $account->name,
@@ -35,7 +55,8 @@ class GmailAccountController extends Controller
                     'daily_limit'  => $account->daily_limit,
                     'remaining'    => $account->remainingToday(),
                     'is_active'    => $account->is_active,
-                    'in_use'       => $busyIds->contains($account->id),
+                    'in_use'       => $working->isNotEmpty(),
+                    'campaigns'    => $working->all(),
                     'token_status' => $account->google_token ? 'valid' : 'missing',
                     'has_script'   => !empty($account->script_url),
                 ];

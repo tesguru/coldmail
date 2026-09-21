@@ -172,23 +172,6 @@ class CampaignController extends Controller
             ]);
         }
 
-        // Block accounts already tied to an active/paused campaign (protects the daily cap)
-        $busyIds = \DB::table('campaign_gmail_accounts as cga')
-            ->join('campaigns as c', 'c.id', '=', 'cga.campaign_id')
-            ->where('c.user_id', Auth::id())
-            ->whereIn('c.status', ['active', 'paused'])
-            ->whereIn('cga.gmail_account_id', $accounts->pluck('id'))
-            ->pluck('cga.gmail_account_id');
-
-        if ($busyIds->isNotEmpty()) {
-            $busyEmails = GmailAccount::whereIn('id', $busyIds)->pluck('email');
-
-            return response()->json([
-                'success' => false,
-                'error'   => 'These accounts are already used in an active campaign: ' . $busyEmails->implode(', '),
-            ]);
-        }
-
         // Check templates exist
         $templateCount = EmailTemplate::where('user_id', Auth::id())
             ->where('type', 'bulk_template')
