@@ -11,6 +11,8 @@ class Campaign extends Model
         'name',
         'domain',
         'price',
+        'facebook_links',
+        'website_links',
         'your_name',
         'label_name',
         'gmail_label_id',

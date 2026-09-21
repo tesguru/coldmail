@@ -9,7 +9,7 @@ use App\Http\Controllers\Internal\EmailDispatchController;
 use App\Http\Controllers\ObanStatusController;
 use Illuminate\Support\Facades\Route;
 
-Route::middleware(['auth', 'admin'])->group(function () {
+Route::middleware(['auth'])->group(function () {
     Route::get('/oban', [ObanStatusController::class, 'dashboard'])->name('oban.dashboard');
     Route::get('/oban-dashboard', [ObanStatusController::class, 'dashboard'])->name('oban-dashboard');
     Route::get('/oban-status', [ObanStatusController::class, 'status'])->name('oban.status');

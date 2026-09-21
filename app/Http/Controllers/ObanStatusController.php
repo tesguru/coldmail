@@ -61,6 +61,19 @@ class ObanStatusController extends Controller
         $totalPages = max(1, (int) ceil($total / $perPage));
         $current    = min($page, $totalPages);
 
+        // ── LIVE ACTIVITY ─────────────────────────────────────
+        $executingNow  = $this->liveJobs($table, ['executing'], 'attempted_at', 6);
+        $justCompleted = $this->liveJobs($table, ['completed'], 'completed_at', 6);
+        $atRisk        = $this->liveJobs($table, ['retryable', 'discarded'], 'attempted_at', 6, withState: true);
+
+        $byWorker = [];
+        foreach ((clone $table)->select('worker', 'state')->selectRaw('COUNT(*) as c')->groupBy('worker', 'state')->get() as $row) {
+            $w = $this->shortWorker($row->worker);
+            $byWorker[$w]['states'][$row->state] = ($byWorker[$w]['states'][$row->state] ?? 0) + (int) $row->c;
+            $byWorker[$w]['total'] = ($byWorker[$w]['total'] ?? 0) + (int) $row->c;
+        }
+        $byWorker = collect($byWorker)->sortByDesc('total')->values();
+
         $jobs = (clone $jobsQuery)
             ->orderByDesc('inserted_at')
             ->forPage($current, $perPage)
@@ -88,12 +101,48 @@ class ObanStatusController extends Controller
             });
 
         return response()->json([
-            'summary'     => collect($this->states)->mapWithKeys(fn ($s) => [$s => $summary[$s] ?? 0]),
-            'jobs'        => $jobs,
-            'page'        => $current,
-            'per_page'    => $perPage,
-            'total'       => $total,
-            'total_pages' => $totalPages,
+            'summary'        => collect($this->states)->mapWithKeys(fn ($s) => [$s => $summary[$s] ?? 0]),
+            'jobs'           => $jobs,
+            'page'           => $current,
+            'per_page'       => $perPage,
+            'total'          => $total,
+            'total_pages'    => $totalPages,
+            'executing_now'  => $executingNow,
+            'just_completed' => $justCompleted,
+            'at_risk'        => $atRisk,
+            'by_worker'      => $byWorker,
         ]);
+    }
+
+    protected function liveJobs($table, array $states, string $orderCol, int $limit, bool $withState = false): array
+    {
+        return (clone $table)
+            ->whereIn('state', $states)
+            ->orderByDesc($orderCol)
+            ->limit($limit)
+            ->get()
+            ->map(function ($job) use ($orderCol, $withState) {
+                $item = [
+                    'id'           => $job->id,
+                    'worker'       => $this->shortWorker($job->worker),
+                    'queue'        => $job->queue,
+                    'at'           => $job->{$orderCol},
+                    'attempt'      => $job->attempt,
+                    'max_attempts' => $job->max_attempts,
+                    'args'         => is_string($job->args) ? json_decode($job->args, true) : $job->args,
+                ];
+
+                if ($withState) {
+                    $item['state'] = $job->state;
+                }
+
+                return $item;
+            })
+            ->all();
+    }
+
+    protected function shortWorker(string $worker): string
+    {
+        return class_basename(str_replace('Elixir.', '', $worker));
     }
 }

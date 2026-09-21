@@ -8,15 +8,15 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::table('users', function (Blueprint $table) {
-            $table->boolean('is_admin')->default(false)->after('avatar');
+        Schema::table('campaigns', function (Blueprint $table) {
+            $table->string('price')->nullable()->change();
         });
     }
 
     public function down(): void
     {
-        Schema::table('users', function (Blueprint $table) {
-            $table->dropColumn('is_admin');
+        Schema::table('campaigns', function (Blueprint $table) {
+            $table->string('price')->nullable(false)->change();
         });
     }
 };

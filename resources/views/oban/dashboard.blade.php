@@ -138,9 +138,41 @@
         .toggle-thumb { width: 12px; height: 12px; background: white; border-radius: 50%; position: absolute; top: 2px; left: 2px; transition: transform 0.2s; }
         .toggle.on .toggle-thumb { transform: translateX(14px); }
 
+        /* LIVE ACTIVITY */
+        .live-section { display: flex; flex-direction: column; gap: 14px; margin-bottom: 1.25rem; }
+        .live-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+        .live-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; min-height: 120px; }
+        .live-card-title { font-size: 11px; font-family: var(--mono); color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.08em; display: flex; align-items: center; gap: 7px; margin-bottom: 12px; }
+        .live-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+        .live-dot.green { background: var(--green); box-shadow: 0 0 8px var(--green); }
+        .live-dot.blue { background: var(--blue); box-shadow: 0 0 8px var(--blue); }
+        .live-dot.red { background: var(--red); box-shadow: 0 0 8px var(--red); }
+        .live-list { display: flex; flex-direction: column; gap: 8px; }
+        .live-empty { font-size: 12px; font-family: var(--mono); color: var(--text-dim); padding: 8px 0; }
+        .live-item { display: flex; align-items: center; gap: 10px; font-family: var(--mono); font-size: 11px; color: var(--text-muted); background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px; }
+        .live-item .live-worker { color: var(--text); font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .live-item .live-when { margin-left: auto; white-space: nowrap; flex-shrink: 0; }
+        .live-item .live-attempt { background: var(--border); color: var(--text-dim); border-radius: 4px; padding: 1px 6px; font-size: 10px; flex-shrink: 0; }
+        .live-item .live-state { flex-shrink: 0; }
+        .live-item .badge { font-size: 9px; padding: 2px 6px; }
+        .worker-section { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; }
+        .section-label { font-size: 10px; font-family: var(--mono); color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 12px; }
+        .worker-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; }
+        .worker-tile { background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; padding: 12px; }
+        .worker-tile-name { font-family: var(--mono); font-size: 12px; font-weight: 600; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 8px; }
+        .worker-tile-stats { display: flex; flex-wrap: wrap; gap: 6px; }
+        .worker-stat { font-family: var(--mono); font-size: 10px; color: var(--text-muted); background: var(--surface); border: 1px solid var(--border); border-radius: 5px; padding: 2px 7px; }
+        .worker-stat b { color: var(--text); }
+        .worker-stat.executing b { color: var(--purple); }
+        .worker-stat.available b { color: var(--blue); }
+        .worker-stat.completed b { color: var(--green); }
+        .worker-stat.retryable b, .worker-stat.discarded b, .worker-stat.cancelled b { color: var(--red); }
+        .worker-stat.scheduled b { color: var(--amber); }
+
         /* RESPONSIVE */
         @media (max-width: 1120px) {
             .summary-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+            .live-grid { grid-template-columns: 1fr; }
         }
         @media (max-width: 640px) {
             .summary-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -203,6 +235,28 @@
     <div class="metric-card"><div class="metric-label">Retryable</div><div class="metric-value retryable" id="s-retryable">0</div></div>
     <div class="metric-card"><div class="metric-label">Cancelled</div><div class="metric-value cancelled" id="s-cancelled">0</div></div>
     <div class="metric-card"><div class="metric-label">Discarded</div><div class="metric-value discarded" id="s-discarded">0</div></div>
+</div>
+
+<div class="live-section">
+    <div class="live-grid">
+        <div class="live-card">
+            <div class="live-card-title"><span class="live-dot green"></span> Executing now</div>
+            <div id="execNow" class="live-list"><div class="live-empty">waiting for data…</div></div>
+        </div>
+        <div class="live-card">
+            <div class="live-card-title"><span class="live-dot blue"></span> Just completed</div>
+            <div id="justCompleted" class="live-list"><div class="live-empty">waiting for data…</div></div>
+        </div>
+        <div class="live-card">
+            <div class="live-card-title"><span class="live-dot red"></span> Failing / at risk</div>
+            <div id="atRisk" class="live-list"><div class="live-empty">waiting for data…</div></div>
+        </div>
+    </div>
+
+    <div class="worker-section">
+        <div class="section-label">workers</div>
+        <div id="workerBreakdown" class="worker-grid"></div>
+    </div>
 </div>
 
 <div class="toolbar">
@@ -284,6 +338,83 @@
         const ampm = h >= 12 ? 'PM' : 'AM';
         h = h % 12 || 12;
         return `${mon} ${day}, ${h}:${m}:${s} ${ampm}`;
+    }
+
+    function timeAgo(t) {
+        if (!t) return '—';
+        const str = t.replace(' ', 'T');
+        const d = new Date(str + (str.includes('Z') ? '' : 'Z'));
+        const s = Math.max(0, Math.floor((Date.now() - d.getTime()) / 1000));
+        if (s < 10) return 'just now';
+        if (s < 60) return `${s}s ago`;
+        const m = Math.floor(s / 60);
+        if (m < 60) return `${m}m ago`;
+        const h = Math.floor(m / 60);
+        if (h < 24) return `${h}h ${m % 60}m ago`;
+        const dd = Math.floor(h / 24);
+        return `${dd}d ago`;
+    }
+
+    function renderLive(data) {
+        const eb = document.getElementById('execNow');
+        if (!data.executing_now || data.executing_now.length === 0) {
+            eb.innerHTML = `<div class="live-empty">nothing running right now</div>`;
+        } else {
+            eb.innerHTML = data.executing_now.map(j => `
+                <div class="live-item">
+                    <span class="live-dot green"></span>
+                    <span class="live-worker" title="${escapeHtml(j.worker)}">${escapeHtml(j.worker)}</span>
+                    <span class="live-attempt">${j.attempt}/${j.max_attempts}</span>
+                    <span class="live-when" title="${formatTime(j.at)}">${timeAgo(j.at)}</span>
+                </div>`).join('');
+        }
+
+        const jc = document.getElementById('justCompleted');
+        if (!data.just_completed || data.just_completed.length === 0) {
+            jc.innerHTML = `<div class="live-empty">nothing completed yet</div>`;
+        } else {
+            jc.innerHTML = data.just_completed.map(j => `
+                <div class="live-item">
+                    <span class="live-worker" title="${escapeHtml(j.worker)}">${escapeHtml(j.worker)}</span>
+                    <span class="live-attempt">#${j.id}</span>
+                    <span class="live-when">${timeAgo(j.at)}</span>
+                </div>`).join('');
+        }
+
+        const ar = document.getElementById('atRisk');
+        if (!data.at_risk || data.at_risk.length === 0) {
+            ar.innerHTML = `<div class="live-empty">no failures — all clear 🎉</div>`;
+        } else {
+            ar.innerHTML = data.at_risk.map(j => `
+                <div class="live-item">
+                    <span class="badge ${j.state}"><span class="badge-dot"></span>${j.state}</span>
+                    <span class="live-worker" title="${escapeHtml(j.worker)}">${escapeHtml(j.worker)}</span>
+                    <span class="live-attempt">${j.attempt}/${j.max_attempts}</span>
+                    <span class="live-when">${timeAgo(j.at)}</span>
+                </div>`).join('');
+        }
+
+        const wb = document.getElementById('workerBreakdown');
+        if (!data.by_worker || data.by_worker.length === 0) {
+            wb.innerHTML = `<div class="live-empty">no workers seen yet</div>`;
+        } else {
+            wb.innerHTML = data.by_worker.map(w => {
+                const states = Object.keys(w.states).sort();
+                const chips = states.map(s => {
+                    return `<span class="worker-stat ${s}"><b>${w.states[s]}</b> ${s}</span>`;
+                }).join('');
+                return `<div class="worker-tile">
+                    <div class="worker-tile-name" title="${escapeHtml(w.worker)}">${escapeHtml(w.worker)}</div>
+                    <div class="worker-tile-stats">${chips}<span class="worker-stat"><b>${w.total}</b> total</span></div>
+                </div>`;
+            }).join('');
+        }
+    }
+
+    function escapeHtml(str) {
+        return String(str ?? '').replace(/[&<>"']/g, c => ({
+            '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+        }[c]));
     }
 
     function setFilter(f, btn) {
@@ -410,6 +541,7 @@
             const res = await fetch('/oban-status?' + params.toString());
             const data = await res.json();
             updateSummary(data.summary);
+            renderLive(data);
             lastData = data;
             currentPage = data.page;
             renderTable();

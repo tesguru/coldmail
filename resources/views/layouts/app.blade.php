@@ -98,10 +98,8 @@
             ['route' => 'accounts.index', 'label' => 'Accounts',     'match' => 'accounts.*'],
             ['route' => 'templates.index','label' => 'Templates',    'match' => 'templates.*'],
             ['route' => 'campaigns.index','label' => 'Campaigns',    'match' => 'campaigns.*'],
+            ['route' => 'oban.dashboard', 'label' => 'Oban',         'match' => 'oban*'],
           ];
-          if (auth()->user()->is_admin) {
-            $navItems[] = ['route' => 'oban.dashboard', 'label' => 'Oban', 'match' => 'oban*'];
-          }
         @endphp
         @foreach($navItems as $item)
           <a href="{{ route($item['route']) }}"
