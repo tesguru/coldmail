@@ -61,6 +61,33 @@ document.addEventListener('DOMContentLoaded', () => {
 async function loadFollowUpStatus() {
   const res = await apiGet(`/api/campaigns/${CAMPAIGN_ID}/follow-up-status`);
   if (res.success) followUpStatus = res;
+  applyFollowUpStatus();
+}
+
+function applyFollowUpStatus() {
+  const btn = document.getElementById('followUpBtn');
+  if (!btn) return;
+
+  const held = followUpStatus.follow_up_held;
+  if (held) {
+    btn.disabled = true;
+    btn.classList.remove('bg-emerald-500', 'text-white', 'hover:bg-emerald-400');
+    btn.classList.add('bg-amber-500/15', 'text-amber-400', 'cursor-not-allowed');
+    const when = followUpStatus.next_available_at ? ` till ${fmtDate(followUpStatus.next_available_at)}` : '';
+    btn.innerHTML = `🔒 Cooldown${when}`;
+    if (followUpStatus.cooldown_accounts) {
+      btn.title = `${followUpStatus.cooldown_accounts} account(s) still in 2-day cooldown`;
+    }
+  } else {
+    btn.disabled = false;
+    btn.classList.remove('bg-amber-500/15', 'text-amber-400', 'cursor-not-allowed');
+    const eligibleFU = allEmails.filter(e => e.status === 'sent' && !e.has_reply && !e.is_bounced).length;
+    if (eligibleFU > 0) btn.classList.add('bg-emerald-500', 'text-white', 'hover:bg-emerald-400');
+    if (btn.innerHTML.includes('Cooldown')) {
+      btn.innerHTML = `🔄 Send Follow Up <span class="text-xs ${eligibleFU === 0 ? 'bg-white/10 text-zinc-500' : 'bg-emerald-700 text-white'} rounded-full px-2 py-0.5">${eligibleFU}</span>`;
+    }
+    btn.title = '';
+  }
 }
 
 async function loadCampaign() {
@@ -305,6 +332,7 @@ async function loadCampaign() {
       </div>
     </div>
   `;
+  applyFollowUpStatus();
 }
 
 // ── Follow up handler ──

@@ -13,4 +13,11 @@ return [
     | this many hours have elapsed since then.
     */
     'rolling_window_hours' => (int) env('ROLLING_WINDOW_HOURS', 48),
+
+    /*
+    | Fixed hour of day the cooldown releases at (24h clock).
+    | An account that last sent is locked until the 2nd day after, at this
+    | exact hour. 0 = midnight.
+    */
+    'rolling_window_fixed_hour' => (int) env('ROLLING_WINDOW_FIXED_HOUR', 0),
 ];

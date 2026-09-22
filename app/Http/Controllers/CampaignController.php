@@ -406,10 +406,12 @@ class CampaignController extends Controller
             : false;
 
         // When will the follow-up actually be able to send? The campaign's
-        // accounts must all be past their 2-day rolling cooldown window.
+        // accounts that sent initial emails must all be past their 2-day
+        // rolling cooldown window.
         $accounts = GmailAccount::whereIn(
             'id',
             CampaignEmail::where('campaign_id', $campaign->id)
+                ->where('status', 'sent')
                 ->whereNotNull('gmail_account_id')
                 ->distinct()
                 ->pluck('gmail_account_id')

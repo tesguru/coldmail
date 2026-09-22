@@ -82,11 +82,14 @@ async function loadAccounts() {
 
   const rows = res.accounts.map(a => {
     const ready     = a.can_send !== false;
-    const rowClass  = ready ? '' : 'bg-white/[0.02] border-l-2 border-l-amber-500/40';
+    const rowClass  = ready
+      ? 'bg-emerald-500/[0.04] border-l-2 border-l-emerald-500/60'
+      : 'bg-white/[0.02] border-l-2 border-l-amber-500/40';
     const sendState = ready
-      ? `<span class="text-[10px] font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/25 rounded-full px-2 py-0.5">✅ Ready</span>`
+      ? `<span class="text-[10px] font-semibold bg-emerald-500/15 text-emerald-300 border border-emerald-500/40 rounded-full px-2 py-0.5">✅ Ready</span>`
       : `<span class="text-[10px] font-semibold bg-amber-500/10 text-amber-400 border border-amber-500/25 rounded-full px-2 py-0.5">🔒 Cooldown till ${fmtDate(a.next_available)}</span>`;
     const lastSent = a.last_sent_at ? fmtDate(a.last_sent_at) : '<span class="text-zinc-600">never</span>';
+    const nameCls  = ready ? 'font-extrabold text-white' : 'font-semibold text-zinc-400';
 
     return `
     <tr class="border-b border-white/[0.04] hover:bg-white/[0.03] transition ${rowClass}">
@@ -97,7 +100,7 @@ async function loadAccounts() {
             : `<div class="w-8 h-8 rounded-lg bg-[#7c6ef7]/15 border border-[#7c6ef7]/25 flex items-center justify-center text-[#a78bfa] font-bold text-xs flex-shrink-0">${a.email[0].toUpperCase()}</div>`
           }
           <div class="min-w-0">
-            <p class="text-sm font-semibold text-white truncate">${a.name}</p>
+            <p class="text-sm ${nameCls} truncate">${a.name}</p>
             <p class="text-xs text-zinc-500 truncate">${a.email}</p>
           </div>
         </div>
@@ -111,7 +114,7 @@ async function loadAccounts() {
         </div>
       </td>
       <td class="py-3 px-4 text-sm font-bold text-sky-400">${a.sent_today}</td>
-      <td class="py-3 px-4 text-sm font-semibold text-zinc-300">${a.remaining}</td>
+      <td class="py-3 px-4 text-sm font-semibold ${ready ? 'text-emerald-400' : 'text-zinc-400'}">${a.remaining}</td>
       <td class="py-3 px-4 text-sm text-zinc-500">${lastSent}</td>
       <td class="py-3 px-4 text-sm text-zinc-500">${a.total_sent}</td>
       <td class="py-3 px-4">

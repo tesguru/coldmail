@@ -385,34 +385,40 @@ async function loadAccountCheckboxes() {
     return;
   }
 
-  el.innerHTML = allAccounts.map(a => {
-    const busyInfo = (a.campaigns || []).map(c =>
-      `<span class="text-amber-400">🔨 ${c.name} · ${c.pending} pending of ${c.allocated}</span>`
-    ).join(' · ');
-    const ready    = a.can_send !== false;
-    const fade     = ready ? '' : ' opacity-70 bg-white/[0.02] border-amber-500/30';
-    const cooldown = ready
-      ? '<span class="text-emerald-400">✅ ready (2d window)</span>'
-      : `<span class="text-amber-400">🔒 cooldown till ${a.next_available ? fmtDate(a.next_available) : 'later'}</span>`;
-    const lastSent = a.last_sent_at ? `last sent ${fmtDate(a.last_sent_at)}` : 'never sent';
-    return `
-    <label class="flex items-center gap-3 bg-[#0e0e14] p-3.5 rounded-xl border border-white/[0.06] cursor-pointer hover:border-[#7c6ef7]/40 transition${fade}">
-      <input type="checkbox" name="gmail_accounts" value="${a.id}"
-             class="w-4 h-4 rounded accent-[#7c6ef7] focus:ring-[#7c6ef7]/30">
-      <div class="flex-1 min-w-0">
-        <p class="text-sm font-semibold text-zinc-200">${a.email}</p>
-        <p class="text-xs text-zinc-500 mt-0.5">
-          ${cooldown}
-          · ${a.in_use ? busyInfo : '<span class="text-emerald-400">✅ not in use</span>'}
-          · ${a.remaining} left today
-          · ${lastSent}
-          · ${a.token_status === 'valid' ? '✅ OAuth ready' : '❌ OAuth needed'}
-          · ${a.has_script ? '✅ Script ready' : '⚠️ No script'}
-        </p>
-      </div>
-    </label>
-    `;
-  }).join('');
+  const avail = allAccounts
+    .map(a => ({ a, ready: a.can_send !== false }))
+    .map(({ a, ready }) => {
+      const busyInfo = (a.campaigns || []).map(c =>
+        `<span class="text-amber-400">🔨 ${c.name} · ${c.pending} pending of ${c.allocated}</span>`
+      ).join(' · ');
+      const fade     = ready ? '' : ' opacity-70 bg-white/[0.02] border-amber-500/30';
+      const cooldown = ready
+        ? '<span class="text-emerald-400 font-semibold">✅ ready (2d window)</span>'
+        : `<span class="text-amber-400">🔒 cooldown till ${a.next_available ? fmtDate(a.next_available) : 'later'}</span>`;
+      const lastSent = a.last_sent_at ? `last sent ${fmtDate(a.last_sent_at)}` : 'never sent';
+      const bold     = ready ? 'font-extrabold text-white' : 'font-semibold text-zinc-400';
+      return `
+      <label class="flex items-center gap-3 p-3.5 rounded-xl border transition ${ready
+        ? 'bg-emerald-500/[0.06] border-emerald-500/40 cursor-pointer hover:border-emerald-400'
+        : 'bg-[#0e0e14] border-white/[0.06] cursor-pointer hover:border-[#7c6ef7]/40'}${fade}">
+        <input type="checkbox" name="gmail_accounts" value="${a.id}"
+               class="w-4 h-4 rounded accent-[#7c6ef7] focus:ring-[#7c6ef7]/30">
+        <div class="flex-1 min-w-0">
+          <p class="text-sm ${bold} truncate">${a.email}</p>
+          <p class="text-xs text-zinc-500 mt-0.5">
+            ${cooldown}
+            · ${a.in_use ? busyInfo : '<span class="text-emerald-400">✅ not in use</span>'}
+            · ${a.remaining} left today
+            · ${lastSent}
+            · ${a.token_status === 'valid' ? '✅ OAuth ready' : '❌ OAuth needed'}
+            · ${a.has_script ? '✅ Script ready' : '⚠️ No script'}
+          </p>
+        </div>
+      </label>
+      `;
+    });
+
+  el.innerHTML = avail.join('');
 }
 
 function setSplitMode(mode) {

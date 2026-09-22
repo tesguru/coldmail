@@ -95,9 +95,17 @@ class GmailAccount extends Model
     {
         $last = $this->lastSentAt();
 
-        return $last
-            ? $last->copy()->addHours($this->rollingWindowHours())
-            : now();
+        if (!$last) {
+            return now();
+        }
+
+        $days = max(1, (int) ceil($this->rollingWindowHours() / 24));
+        $hour = (int) config('coldmail.rolling_window_fixed_hour', 0);
+
+        return $last->copy()
+            ->addDays($days)
+            ->startOfDay()
+            ->addHours($hour);
     }
 
     public function canSendNow(): bool
