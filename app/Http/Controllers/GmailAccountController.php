@@ -44,6 +44,8 @@ class GmailAccountController extends Controller
                     ])
                     ->values();
 
+                $lastSent = $account->lastSentAt();
+
                 return [
                     'id'               => $account->id,
                     'name'             => $account->name,
@@ -59,9 +61,9 @@ class GmailAccountController extends Controller
                     'campaigns'        => $working->all(),
                     'token_status'     => $account->google_token ? 'valid' : 'missing',
                     'has_script'       => !empty($account->script_url),
-                    'last_sent_at'     => $account->lastSentAt()?->toIso8601String(),
-                    'next_available'   => $account->nextAvailableAt()->toIso8601String(),
-                    'can_send'         => $account->canSendNow(),
+                    'last_sent_at'     => $lastSent?->toIso8601String(),
+                    'next_available'   => $lastSent ? $account->nextAvailableAt()->toIso8601String() : now()->toIso8601String(),
+                    'can_send'         => $lastSent === null ? true : $account->canSendNow(),
                     'window_hours'     => $account->rollingWindowHours(),
                     'sent_in_window'   => $account->sentInWindow(),
                 ];

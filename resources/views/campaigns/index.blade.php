@@ -386,7 +386,7 @@ async function loadAccountCheckboxes() {
   }
 
   const avail = allAccounts
-    .map(a => ({ a, ready: a.can_send !== false }))
+    .map(a => ({ a, ready: !a.last_sent_at || a.can_send !== false }))
     .map(({ a, ready }) => {
       const busyInfo = (a.campaigns || []).map(c =>
         `<span class="text-amber-400">🔨 ${c.name} · ${c.pending} pending of ${c.allocated}</span>`

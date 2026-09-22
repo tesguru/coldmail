@@ -81,7 +81,7 @@ async function loadAccounts() {
   }
 
   const rows = res.accounts.map(a => {
-    const ready     = a.can_send !== false;
+    const ready     = !a.last_sent_at || a.can_send !== false;
     const rowClass  = ready
       ? 'bg-emerald-500/[0.04] border-l-2 border-l-emerald-500/60'
       : 'bg-white/[0.02] border-l-2 border-l-amber-500/40';
