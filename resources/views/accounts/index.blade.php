@@ -52,10 +52,19 @@
 document.addEventListener('DOMContentLoaded', loadAccounts);
 
 async function loadAccounts() {
-  const res = await apiGet('/api/gmail-accounts');
+  const res = await apiGet('/api/gmail-accounts').catch(() => null);
   const el  = document.getElementById('accountsList');
 
-  if (!res.accounts?.length) {
+  if (!res || !res.accounts) {
+    el.innerHTML = `
+      <div class="bg-[#121218] border border-red-500/30 rounded-3xl p-8 text-center">
+        <p class="text-red-400 font-bold mb-1">Could not load accounts</p>
+        <p class="text-zinc-500 text-sm">${res?.message || res?.error || 'Server error loading accounts. Please refresh.'}</p>
+      </div>`;
+    return;
+  }
+
+  if (!res.accounts.length) {
     el.innerHTML = `
       <div class="bg-[#121218] border border-white/[0.06] rounded-3xl p-14 text-center">
         <div class="w-16 h-16 mx-auto mb-5 rounded-2xl bg-[#7c6ef7]/10 border border-[#7c6ef7]/25 flex items-center justify-center">
@@ -72,8 +81,9 @@ async function loadAccounts() {
   }
 
   const rows = res.accounts.map(a => {
-    const rowClass = a.can_send ? '' : 'opacity-40';
-    const sendState = a.can_send
+    const ready     = a.can_send !== false;
+    const rowClass  = ready ? '' : 'bg-white/[0.02] border-l-2 border-l-amber-500/40';
+    const sendState = ready
       ? `<span class="text-[10px] font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/25 rounded-full px-2 py-0.5">✅ Ready</span>`
       : `<span class="text-[10px] font-semibold bg-amber-500/10 text-amber-400 border border-amber-500/25 rounded-full px-2 py-0.5">🔒 Cooldown till ${fmtDate(a.next_available)}</span>`;
     const lastSent = a.last_sent_at ? fmtDate(a.last_sent_at) : '<span class="text-zinc-600">never</span>';

@@ -371,9 +371,14 @@ function statusBadge(status) {
 
 // ── Load Gmail account checkboxes ──
 async function loadAccountCheckboxes() {
-  const res   = await apiGet('/api/gmail-accounts');
-  allAccounts = res.accounts || [];
+  const res   = await apiGet('/api/gmail-accounts').catch(() => null);
+  allAccounts = res?.accounts || [];
   const el    = document.getElementById('accountCheckboxes');
+
+  if (!res) {
+    el.innerHTML = `<p class="text-sm text-red-400">Could not load accounts. <a href="{{ route('accounts.index') }}" class="underline">Check accounts page</a></p>`;
+    return;
+  }
 
   if (!allAccounts.length) {
     el.innerHTML = `<p class="text-sm text-red-400">No Gmail accounts connected. <a href="{{ route('accounts.index') }}" class="underline">Add one first</a></p>`;
@@ -384,10 +389,11 @@ async function loadAccountCheckboxes() {
     const busyInfo = (a.campaigns || []).map(c =>
       `<span class="text-amber-400">🔨 ${c.name} · ${c.pending} pending of ${c.allocated}</span>`
     ).join(' · ');
-    const fade     = a.can_send ? '' : ' opacity-50';
-    const cooldown = a.can_send
+    const ready    = a.can_send !== false;
+    const fade     = ready ? '' : ' opacity-70 bg-white/[0.02] border-amber-500/30';
+    const cooldown = ready
       ? '<span class="text-emerald-400">✅ ready (2d window)</span>'
-      : `<span class="text-red-400">🔒 cooldown till ${a.next_available ? fmtDate(a.next_available) : 'later'}</span>`;
+      : `<span class="text-amber-400">🔒 cooldown till ${a.next_available ? fmtDate(a.next_available) : 'later'}</span>`;
     const lastSent = a.last_sent_at ? `last sent ${fmtDate(a.last_sent_at)}` : 'never sent';
     return `
     <label class="flex items-center gap-3 bg-[#0e0e14] p-3.5 rounded-xl border border-white/[0.06] cursor-pointer hover:border-[#7c6ef7]/40 transition${fade}">
