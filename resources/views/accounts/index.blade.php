@@ -71,8 +71,15 @@ async function loadAccounts() {
     return;
   }
 
-  const rows = res.accounts.map(a => `
-    <tr class="border-b border-white/[0.04] hover:bg-white/[0.03] transition">
+  const rows = res.accounts.map(a => {
+    const rowClass = a.can_send ? '' : 'opacity-40';
+    const sendState = a.can_send
+      ? `<span class="text-[10px] font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/25 rounded-full px-2 py-0.5">✅ Ready</span>`
+      : `<span class="text-[10px] font-semibold bg-amber-500/10 text-amber-400 border border-amber-500/25 rounded-full px-2 py-0.5">🔒 Cooldown till ${fmtDate(a.next_available)}</span>`;
+    const lastSent = a.last_sent_at ? fmtDate(a.last_sent_at) : '<span class="text-zinc-600">never</span>';
+
+    return `
+    <tr class="border-b border-white/[0.04] hover:bg-white/[0.03] transition ${rowClass}">
       <td class="py-3 px-4">
         <div class="flex items-center gap-3 min-w-0">
           ${a.avatar
@@ -87,6 +94,7 @@ async function loadAccounts() {
       </td>
       <td class="py-3 px-4">
         <div class="flex items-center gap-1.5 flex-wrap">
+          ${sendState}
           <span class="${miniBadge(a.is_active)}">${a.is_active ? 'Active' : 'Off'}</span>
           <span class="${miniBadge(a.has_script)}">${a.has_script ? 'Script' : 'No script'}</span>
           <span class="${miniBadge(a.token_status === 'valid')}">${a.token_status === 'valid' ? 'OAuth' : 'No OAuth'}</span>
@@ -94,6 +102,7 @@ async function loadAccounts() {
       </td>
       <td class="py-3 px-4 text-sm font-bold text-sky-400">${a.sent_today}</td>
       <td class="py-3 px-4 text-sm font-semibold text-zinc-300">${a.remaining}</td>
+      <td class="py-3 px-4 text-sm text-zinc-500">${lastSent}</td>
       <td class="py-3 px-4 text-sm text-zinc-500">${a.total_sent}</td>
       <td class="py-3 px-4">
         <div class="flex items-center justify-end gap-1">
@@ -122,7 +131,8 @@ async function loadAccounts() {
         </div>
       </td>
     </tr>
-  `).join('');
+  `;
+  }).join('');
 
   el.innerHTML = `
     <div class="bg-[#121218] border border-white/[0.06] rounded-2xl overflow-hidden">
@@ -138,6 +148,7 @@ async function loadAccounts() {
               <th class="text-left py-3 px-4 text-[11px] font-semibold text-zinc-500 uppercase tracking-wider">Status</th>
               <th class="text-left py-3 px-4 text-[11px] font-semibold text-zinc-500 uppercase tracking-wider">Sent today</th>
               <th class="text-left py-3 px-4 text-[11px] font-semibold text-zinc-500 uppercase tracking-wider">Remaining</th>
+              <th class="text-left py-3 px-4 text-[11px] font-semibold text-zinc-500 uppercase tracking-wider">Last sent</th>
               <th class="text-left py-3 px-4 text-[11px] font-semibold text-zinc-500 uppercase tracking-wider">Total sent</th>
               <th class="text-right py-3 px-4 text-[11px] font-semibold text-zinc-500 uppercase tracking-wider">Actions</th>
             </tr>
@@ -152,6 +163,14 @@ function miniBadge(on) {
   return on
     ? 'text-[10px] font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/25 rounded-full px-2 py-0.5'
     : 'text-[10px] font-semibold bg-white/5 text-zinc-500 border border-white/10 rounded-full px-2 py-0.5';
+}
+
+function fmtDate(iso) {
+  if (!iso) return '—';
+  const d = new Date(iso);
+  return d.toLocaleString(undefined, {
+    month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit',
+  });
 }
 
 function openScriptModal(id, currentUrl) {

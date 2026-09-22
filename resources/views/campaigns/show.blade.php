@@ -45,6 +45,14 @@ const CAMPAIGN_ID = {{ $id }};
 let allEmails      = [];
 let followUpStatus = {};
 
+function fmtDate(iso) {
+  if (!iso) return '—';
+  const d = new Date(iso);
+  return d.toLocaleString(undefined, {
+    month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit',
+  });
+}
+
 document.addEventListener('DOMContentLoaded', () => {
   loadCampaign();
   loadFollowUpStatus();
@@ -305,6 +313,13 @@ async function handleFollowUp() {
   if (eligible === 0) { toast('No eligible prospects', 'All have replied or bounced', 'info'); return; }
 
   const status = await apiGet(`/api/campaigns/${CAMPAIGN_ID}/follow-up-status`);
+
+  if (status.follow_up_held) {
+    toast('Follow-up held',
+      `${status.cooldown_accounts} account(s) still in 2-day cooldown. Available ${status.next_available_at ? fmtDate(status.next_available_at) : 'later'}.`,
+      'info');
+    return;
+  }
 
   if (status.needs_price) {
     document.getElementById('defaultPriceLabel').textContent = status.campaign_price || 'not set';

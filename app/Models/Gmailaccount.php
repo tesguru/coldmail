@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Carbon;
 
 class GmailAccount extends Model
 {
@@ -69,6 +70,48 @@ class GmailAccount extends Model
     {
         $this->resetDailyCountIfNeeded();
         return max(0, $this->daily_limit - $this->sent_today);
+    }
+
+    // Rolling window quota — mirrors Google's real reset behaviour.
+    // The anchor is the account's LAST send time: no emails may be sent again
+    // until `rolling_window_hours` (default 2 days) have elapsed since then.
+    //
+    // If no send ever happened, the account is available immediately.
+    public function lastSentAt(): ?Carbon
+    {
+        $value = $this->campaignEmails()
+            ->whereNotNull('sent_at')
+            ->max('sent_at');
+
+        return $value ? Carbon::parse($value) : null;
+    }
+
+    public function rollingWindowHours(): int
+    {
+        return max(1, (int) config('coldmail.rolling_window_hours', 48));
+    }
+
+    public function nextAvailableAt(): Carbon
+    {
+        $last = $this->lastSentAt();
+
+        return $last
+            ? $last->copy()->addHours($this->rollingWindowHours())
+            : now();
+    }
+
+    public function canSendNow(): bool
+    {
+        return now()->gte($this->nextAvailableAt());
+    }
+
+    // Emails sent inside the current rolling window (how many of the last N hours).
+    public function sentInWindow(): int
+    {
+        return $this->campaignEmails()
+            ->whereNotNull('sent_at')
+            ->where('sent_at', '>=', now()->subHours($this->rollingWindowHours()))
+            ->count();
     }
 
     protected function resetDailyCountIfNeeded(): void

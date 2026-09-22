@@ -405,13 +405,30 @@ class CampaignController extends Controller
             ? (str_contains($template->body_template, '{price}') || str_contains($template->subject_template, '{price}'))
             : false;
 
+        // When will the follow-up actually be able to send? The campaign's
+        // accounts must all be past their 2-day rolling cooldown window.
+        $accounts = GmailAccount::whereIn(
+            'id',
+            CampaignEmail::where('campaign_id', $campaign->id)
+                ->whereNotNull('gmail_account_id')
+                ->distinct()
+                ->pluck('gmail_account_id')
+        )->get();
+
+        $cooldownAccounts   = $accounts->filter(fn ($acc) => !$acc->canSendNow())->values();
+        $nextAvailableAt    = $cooldownAccounts->max(fn ($acc) => $acc->nextAvailableAt()->timestamp);
+        $followUpHold       = $nextAvailableAt ? \Illuminate\Support\Carbon::createFromTimestamp($nextAvailableAt) : null;
+
         return response()->json([
-            'success'        => true,
-            'eligible'       => $eligible,
-            'next_level'     => $nextLevel,
-            'has_template'   => (bool) $template,
-            'needs_price'    => $hasPriceVar,
-            'campaign_price' => $campaign->price,
+            'success'            => true,
+            'eligible'           => $eligible,
+            'next_level'         => $nextLevel,
+            'has_template'       => (bool) $template,
+            'needs_price'        => $hasPriceVar,
+            'campaign_price'     => $campaign->price,
+            'cooldown_accounts'  => $cooldownAccounts->count(),
+            'follow_up_held'     => $cooldownAccounts->isNotEmpty(),
+            'next_available_at'  => $followUpHold?->toIso8601String(),
         ]);
     }
 

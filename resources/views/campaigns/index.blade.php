@@ -240,6 +240,14 @@ function getLinks(type) {
     .filter(v => v !== '');
 }
 
+function fmtDate(iso) {
+  if (!iso) return '—';
+  const d = new Date(iso);
+  return d.toLocaleString(undefined, {
+    month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit',
+  });
+}
+
 // ── Paste handler ──
 function handlePaste(event) {
   event.preventDefault();
@@ -376,15 +384,22 @@ async function loadAccountCheckboxes() {
     const busyInfo = (a.campaigns || []).map(c =>
       `<span class="text-amber-400">🔨 ${c.name} · ${c.pending} pending of ${c.allocated}</span>`
     ).join(' · ');
+    const fade     = a.can_send ? '' : ' opacity-50';
+    const cooldown = a.can_send
+      ? '<span class="text-emerald-400">✅ ready (2d window)</span>'
+      : `<span class="text-red-400">🔒 cooldown till ${a.next_available ? fmtDate(a.next_available) : 'later'}</span>`;
+    const lastSent = a.last_sent_at ? `last sent ${fmtDate(a.last_sent_at)}` : 'never sent';
     return `
-    <label class="flex items-center gap-3 bg-[#0e0e14] p-3.5 rounded-xl border border-white/[0.06] cursor-pointer hover:border-[#7c6ef7]/40 transition">
+    <label class="flex items-center gap-3 bg-[#0e0e14] p-3.5 rounded-xl border border-white/[0.06] cursor-pointer hover:border-[#7c6ef7]/40 transition${fade}">
       <input type="checkbox" name="gmail_accounts" value="${a.id}"
              class="w-4 h-4 rounded accent-[#7c6ef7] focus:ring-[#7c6ef7]/30">
       <div class="flex-1 min-w-0">
         <p class="text-sm font-semibold text-zinc-200">${a.email}</p>
         <p class="text-xs text-zinc-500 mt-0.5">
-          ${a.in_use ? busyInfo : '<span class="text-emerald-400">✅ not in use</span>'}
+          ${cooldown}
+          · ${a.in_use ? busyInfo : '<span class="text-emerald-400">✅ not in use</span>'}
           · ${a.remaining} left today
+          · ${lastSent}
           · ${a.token_status === 'valid' ? '✅ OAuth ready' : '❌ OAuth needed'}
           · ${a.has_script ? '✅ Script ready' : '⚠️ No script'}
         </p>
