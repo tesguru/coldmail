@@ -96,7 +96,7 @@ class GmailAccount extends Model
         $last = $this->lastSentAt();
 
         if (!$last) {
-            return now();
+            return now()->startOfSecond();
         }
 
         $days = max(1, (int) ceil($this->rollingWindowHours() / 24));
@@ -110,7 +110,7 @@ class GmailAccount extends Model
 
     public function canSendNow(): bool
     {
-        return now()->gte($this->nextAvailableAt());
+        return now()->startOfSecond()->gte($this->nextAvailableAt());
     }
 
     // Emails sent inside the current rolling window (how many of the last N hours).
