@@ -49,6 +49,11 @@ class GmailAccount extends Model
         return $this->hasMany(CampaignEmail::class);
     }
 
+    public function sendLogs()
+    {
+        return $this->hasMany(GmailAccountSendLog::class);
+    }
+
     // ============================================================
     // DAILY LIMIT
     // ============================================================
@@ -79,9 +84,7 @@ class GmailAccount extends Model
     // If no send ever happened, the account is available immediately.
     public function lastSentAt(): ?Carbon
     {
-        $value = $this->campaignEmails()
-            ->whereNotNull('sent_at')
-            ->max('sent_at');
+        $value = $this->sendLogs()->max('sent_at');
 
         return $value ? Carbon::parse($value) : null;
     }
@@ -116,8 +119,7 @@ class GmailAccount extends Model
     // Emails sent inside the current rolling window (how many of the last N hours).
     public function sentInWindow(): int
     {
-        return $this->campaignEmails()
-            ->whereNotNull('sent_at')
+        return $this->sendLogs()
             ->where('sent_at', '>=', now()->subHours($this->rollingWindowHours()))
             ->count();
     }

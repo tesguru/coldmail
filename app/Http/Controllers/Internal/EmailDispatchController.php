@@ -73,6 +73,14 @@ class EmailDispatchController extends Controller
             ]);
 
             $account->incrementSent();
+            $account->sendLogs()->create([
+                'user_id'           => $account->user_id,
+                'gmail_account_id'  => $account->id,
+                'campaign_id'       => $email->campaign_id,
+                'campaign_email_id' => $email->id,
+                'to_email'          => $email->to_email,
+                'sent_at'           => now(),
+            ]);
             $email->campaign->refreshStats();
 
             Log::info('✅ Initial email sent', [
@@ -199,6 +207,14 @@ class EmailDispatchController extends Controller
             ]);
 
             $account->incrementSent();
+            $account->sendLogs()->create([
+                'user_id'           => $account->user_id,
+                'gmail_account_id'  => $account->id,
+                'campaign_id'       => $email->campaign_id,
+                'campaign_email_id' => $email->id,
+                'to_email'          => $email->to_email,
+                'sent_at'           => now(),
+            ]);
             $email->campaign->refreshStats();
 
             Log::info('✅ Follow up sent', [
