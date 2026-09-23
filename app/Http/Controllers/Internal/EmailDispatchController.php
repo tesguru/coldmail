@@ -46,13 +46,6 @@ class EmailDispatchController extends Controller
             return response()->json(['error' => 'Account inactive'], 400);
         }
 
-        if (!$account->canSendNow()) {
-            return response()->json([
-                'error'          => 'Rolling cooldown active',
-                'next_available' => $account->nextAvailableAt()->toIso8601String(),
-            ], 400);
-        }
-
         if ($account->hasReachedDailyLimit()) {
             return response()->json(['error' => 'Daily limit reached'], 400);
         }
@@ -127,13 +120,6 @@ class EmailDispatchController extends Controller
 
         if (!$account || !$account->is_active) {
             return response()->json(['error' => 'Account inactive'], 400);
-        }
-
-        if (!$account->canSendNow()) {
-            return response()->json([
-                'error'          => 'Rolling cooldown active',
-                'next_available' => $account->nextAvailableAt()->toIso8601String(),
-            ], 400);
         }
 
         if ($account->hasReachedDailyLimit()) {
