@@ -176,8 +176,6 @@ class GmailService
                 $this->applyLabelToThread($sent->getThreadId(), $labelId);
             }
 
-            $this->account->incrementSent();
-
             return [
                 'success'    => true,
                 'message_id' => $sent->getId(),
