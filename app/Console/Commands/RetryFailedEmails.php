@@ -30,11 +30,16 @@ class RetryFailedEmails extends Command
 
         $requeued = 0;
 
-        foreach ($failed as $email) {
-            $email->increment('send_attempts');
-            $email->update(['status' => 'pending']);
-            ObanService::insertEmailJob($email->id, rand(1, 3));
-            $requeued++;
+        foreach ($failed->groupBy('gmail_account_id') as $accountEmails) {
+            $nextSlot = now();
+
+            foreach ($accountEmails as $email) {
+                $email->increment('send_attempts');
+                $email->update(['status' => 'pending']);
+                $nextSlot = $nextSlot->copy()->addMinutes(rand(1, 3));
+                ObanService::insertEmailJob($email->id, 0, $nextSlot);
+                $requeued++;
+            }
         }
 
         Log::info('Auto-retried failed emails', [

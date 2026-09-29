@@ -2,15 +2,18 @@
 
 namespace App\Services;
 
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 
 class ObanService
 {
     public static function insertEmailJob(
         int $campaignEmailId,
-        int $delayMinutes = 0
+        int $delayMinutes = 0,
+        ?Carbon $scheduledAt = null
     ): void {
-        $state = $delayMinutes > 0 ? 'scheduled' : 'available';
+        $scheduledAt = $scheduledAt ?? now()->addMinutes($delayMinutes);
+        $state       = $delayMinutes > 0 || $scheduledAt->gt(now()) ? 'scheduled' : 'available';
 
         DB::table('oban_jobs')->insert([
             'state'        => DB::raw("'{$state}'::oban_job_state"),
@@ -25,15 +28,17 @@ class ObanService
             'attempt'      => 0,
             'max_attempts' => 3,
             'inserted_at'  => now(),
-            'scheduled_at' => now()->addMinutes($delayMinutes),
+            'scheduled_at' => $scheduledAt,
         ]);
     }
 
     public static function insertFollowUpJob(
         int $campaignEmailId,
-        int $delayMinutes = 0
+        int $delayMinutes = 0,
+        ?Carbon $scheduledAt = null
     ): void {
-        $state = $delayMinutes > 0 ? 'scheduled' : 'available';
+        $scheduledAt = $scheduledAt ?? now()->addMinutes($delayMinutes);
+        $state       = $delayMinutes > 0 || $scheduledAt->gt(now()) ? 'scheduled' : 'available';
 
         DB::table('oban_jobs')->insert([
             'state'        => DB::raw("'{$state}'::oban_job_state"),
@@ -48,7 +53,7 @@ class ObanService
             'attempt'      => 0,
             'max_attempts' => 3,
             'inserted_at'  => now(),
-            'scheduled_at' => now()->addMinutes($delayMinutes),
+            'scheduled_at' => $scheduledAt,
         ]);
     }
 

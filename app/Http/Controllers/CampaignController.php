@@ -264,8 +264,8 @@ class CampaignController extends Controller
         $jobsCreated = 0;
 
         foreach ($splits as $accountId => $accountRecipients) {
-            $account = $accounts->firstWhere('id', $accountId);
-            $delay   = 0;
+            $account    = $accounts->firstWhere('id', $accountId);
+            $nextSlot   = now();
 
             foreach ($accountRecipients as $recipientEmail) {
                 $template = EmailTemplate::getRandomByType(
@@ -301,8 +301,8 @@ class CampaignController extends Controller
                     'status'           => 'pending',
                 ]);
 
-                $delay = rand(2, 4);
-                ObanService::insertEmailJob($campaignEmail->id, $delay);
+                $nextSlot = $nextSlot->copy()->addMinutes(rand(2, 4));
+                ObanService::insertEmailJob($campaignEmail->id, 0, $nextSlot);
                 $jobsCreated++;
             }
         }
@@ -366,9 +366,11 @@ class CampaignController extends Controller
 
         $price  = $request->input('price', $campaign->price);
         $queued = 0;
-        $delay  = 0;
 
-        foreach ($emails as $email) {
+        foreach ($emails->groupBy('gmail_account_id') as $accountEmails) {
+            $nextSlot = now();
+
+            foreach ($accountEmails as $email) {
             $followUpLevel = $email->follow_up_count + 1;
             $tpl           = EmailTemplate::getForFollowUpLevel(Auth::id(), $followUpLevel);
 
@@ -378,9 +380,10 @@ class CampaignController extends Controller
                 $email->update(['body' => str_replace('{price}', $price, $tpl->body_template)]);
             }
 
-            $delay = rand(1, 3);
-            ObanService::insertFollowUpJob($email->id, $delay);
+            $nextSlot = $nextSlot->copy()->addMinutes(rand(1, 3));
+            ObanService::insertFollowUpJob($email->id, 0, $nextSlot);
             $queued++;
+        }
         }
 
         return response()->json([
@@ -523,12 +526,14 @@ class CampaignController extends Controller
             ->where('status', 'failed')
             ->get();
 
-        $delay = 0;
+        foreach ($failedEmails->groupBy('gmail_account_id') as $accountEmails) {
+            $nextSlot = now();
 
-        foreach ($failedEmails as $email) {
-            $email->update(['status' => 'pending']);
-            $delay += rand(2, 4);
-            ObanService::insertEmailJob($email->id, $delay);
+            foreach ($accountEmails as $email) {
+                $email->update(['status' => 'pending']);
+                $nextSlot = $nextSlot->copy()->addMinutes(rand(2, 4));
+                ObanService::insertEmailJob($email->id, 0, $nextSlot);
+            }
         }
 
         return response()->json([
