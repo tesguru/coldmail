@@ -172,6 +172,26 @@ async function loadCampaign() {
       ${statBox('Bounced',    c.bounce_count,    'text-red-400')}
     </div>
 
+    ${c.avg_gap ? `
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-7">
+      <div class="bg-[#121218] border border-white/[0.06] rounded-2xl p-4">
+        <p class="text-2xl font-bold text-sky-400">${c.avg_gap.minutes} min</p>
+        <p class="text-[11px] text-zinc-500 mt-1 font-medium">Avg gap between emails</p>
+      </div>
+      <div class="bg-[#121218] border border-white/[0.06] rounded-2xl p-4">
+        <p class="text-sm font-bold text-white">${fmtDate(c.avg_gap.first_send_at)}</p>
+        <p class="text-[11px] text-zinc-500 mt-1 font-medium">First email sends</p>
+      </div>
+      <div class="bg-[#121218] border border-white/[0.06] rounded-2xl p-4">
+        <p class="text-sm font-bold text-white">${fmtDate(c.avg_gap.last_send_at)}</p>
+        <p class="text-[11px] text-zinc-500 mt-1 font-medium">Last email sends</p>
+      </div>
+      <div class="bg-[#121218] border border-white/[0.06] rounded-2xl p-4">
+        <p class="text-2xl font-bold text-amber-400">${c.avg_gap.est_total_hours} hrs</p>
+        <p class="text-[11px] text-zinc-500 mt-1 font-medium">Total queue spread</p>
+      </div>
+    </div>` : ''}
+
     <!-- PROGRESS BARS -->
     <div class="bg-[#121218] border border-white/[0.06] rounded-2xl p-6 mb-6">
       <h2 class="font-bold text-white mb-6">Sending Progress</h2>
@@ -320,7 +340,7 @@ async function loadCampaign() {
               <th class="text-left py-3.5 px-4 text-[11px] font-semibold text-zinc-500 uppercase tracking-wider">Company</th>
               <th class="text-left py-3.5 px-4 text-[11px] font-semibold text-zinc-500 uppercase tracking-wider">Status</th>
               <th class="text-left py-3.5 px-4 text-[11px] font-semibold text-zinc-500 uppercase tracking-wider">Follow-ups</th>
-              <th class="text-left py-3.5 px-4 text-[11px] font-semibold text-zinc-500 uppercase tracking-wider">Sent at</th>
+              <th class="text-left py-3.5 px-4 text-[11px] font-semibold text-zinc-500 uppercase tracking-wider">Sends at</th>
               <th class="text-left py-3.5 px-4 text-[11px] font-semibold text-zinc-500 uppercase tracking-wider">Account</th>
               <th class="text-right py-3.5 px-4 text-[11px] font-semibold text-zinc-500 uppercase tracking-wider">Action</th>
             </tr>
@@ -425,7 +445,7 @@ function renderEmails(emails) {
       <td class="py-3.5 px-4 text-zinc-400 text-sm">${e.company_name || '—'}</td>
       <td class="py-3.5 px-4"><span class="${emailStatusClass(e)}">${emailStatusLabel(e)}</span></td>
       <td class="py-3.5 px-4 text-zinc-500 text-sm">${e.follow_up_count}</td>
-      <td class="py-3.5 px-4 text-zinc-600 text-xs">${e.sent_at ? new Date(e.sent_at).toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'numeric' }) : '—'}</td>
+      <td class="py-3.5 px-4 text-zinc-600 text-xs">${e.sent_at ? fmtDate(e.sent_at) : (e.scheduled_at ? fmtDate(e.scheduled_at) : '—')}</td>
       <td class="py-3.5 px-4 text-zinc-600 text-xs truncate max-w-[140px]">${e.gmail_account || '—'}</td>
       <td class="py-3.5 px-4 text-right">
         <button onclick="event.stopPropagation(); deleteProspect(${e.id}, '${e.to_email.replace(/'/g, "\\'")}')"

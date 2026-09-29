@@ -11,6 +11,7 @@ use App\Services\GmailService;
 use App\Services\ObanService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 class CampaignController extends Controller
@@ -60,7 +61,12 @@ class CampaignController extends Controller
             ->with(['emails.gmailAccount', 'gmailAccounts'])
             ->findOrFail($id);
 
-        $emails = $campaign->emails->map(function ($email) {
+        $scheduled = DB::table('oban_jobs')
+            ->whereIn('state', ['available', 'scheduled', 'executing'])
+            ->whereNotNull('scheduled_at')
+            ->pluck('scheduled_at', DB::raw("(args->>'campaign_email_id')::int"));
+
+        $emails = $campaign->emails->map(function ($email) use ($scheduled) {
             return [
                 'id'              => $email->id,
                 'to_email'        => $email->to_email,
@@ -75,9 +81,34 @@ class CampaignController extends Controller
                 'follow_up_count' => $email->follow_up_count,
                 'template_type'   => $email->template_type,
                 'sent_at'         => $email->sent_at,
+                'scheduled_at'    => $scheduled[$email->id] ?? null,
                 'gmail_account'   => $email->gmailAccount?->email,
             ];
         });
+
+        // Estimate when each pending email will actually go out, based on the
+        // random spacing between emails queued in the same batch.
+        $pending = $emails->filter(fn ($e) => $e['status'] === 'pending' && $e['scheduled_at'])->values();
+        if ($pending->isNotEmpty()) {
+            $times = $pending->pluck('scheduled_at')->map(fn ($t) => \Illuminate\Support\Carbon::parse($t));
+            $gaps = $times->sort()->values();
+            $spans = [];
+            for ($i = 1; $i < $gaps->count(); $i++) {
+                $spans[] = $gaps[$i]->diffInMinutes($gaps[$i - 1]);
+            }
+            $avgGapMin   = $spans ? (int) round(array_sum($spans) / count($spans)) : 0;
+            $firstAt     = $gaps->first();
+            $lastAt      = $gaps->last();
+            $estSeconds  = $lastAt->diffInSeconds($firstAt);
+            $avgGap = [
+                'minutes'         => $avgGapMin,
+                'first_send_at'   => $firstAt->toIso8601String(),
+                'last_send_at'    => $lastAt->toIso8601String(),
+                'est_total_hours' => round($estSeconds / 3600, 2),
+            ];
+        } else {
+            $avgGap = null;
+        }
 
         return response()->json([
             'success'  => true,
@@ -98,6 +129,7 @@ class CampaignController extends Controller
                 'follow_up_count' => $campaign->follow_up_count,
                 'gmail_accounts'  => $campaign->gmailAccounts->pluck('email'),
                 'emails'          => $emails,
+                'avg_gap'         => $avgGap,
             ],
         ]);
     }
