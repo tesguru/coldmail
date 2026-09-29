@@ -130,6 +130,28 @@ class CampaignController extends Controller
                 'gmail_accounts'  => $campaign->gmailAccounts->pluck('email'),
                 'emails'          => $emails,
                 'avg_gap'         => $avgGap,
+                'account_stats'   => $campaign->emails
+                    ->groupBy('gmail_account_id')
+                    ->map(function ($group) {
+                        $total   = $group->count();
+                        $sent    = $group->where('status', 'sent')->count();
+                        $pending = $group->where('status', 'pending')->count();
+                        $failed  = $group->where('status', 'failed')->count();
+                        $replied = $group->where('has_reply', true)->count();
+                        $bounced = $group->where('is_bounced', true)->count();
+
+                        return [
+                            'account'  => $group->first()->gmailAccount?->email,
+                            'total'    => $total,
+                            'sent'     => $sent,
+                            'pending'  => $pending,
+                            'failed'   => $failed,
+                            'replied'  => $replied,
+                            'bounced'  => $bounced,
+                            'progress' => $total > 0 ? round(($sent / $total) * 100) : 0,
+                        ];
+                    })
+                    ->values(),
             ],
         ]);
     }
@@ -139,20 +161,10 @@ class CampaignController extends Controller
     // ============================================================
     public function store(Request $request)
     {
-        // Price is only required when an active template actually uses {price}
-        $hasPriceVar = EmailTemplate::where('user_id', Auth::id())
-            ->where('type', 'bulk_template')
-            ->where('is_active', true)
-            ->where(function ($q) {
-                $q->where('body_template', 'like', '%{price}%')
-                  ->orWhere('subject_template', 'like', '%{price}%');
-            })
-            ->exists();
-
         $request->validate([
             'name'             => 'required|string|max:255',
             'domain'           => 'required|string',
-            'price'            => $hasPriceVar ? 'required|string' : 'nullable|string',
+            'price'            => 'required|string',
             'your_name'        => 'required|string',
             'recipients'       => 'required|string',
             'gmail_accounts'   => 'required|array|min:1',
@@ -268,10 +280,22 @@ class CampaignController extends Controller
             $nextSlot   = now();
 
             foreach ($accountRecipients as $recipientEmail) {
-                $template = EmailTemplate::getRandomByType(
-                    userId: Auth::id(),
-                    type: 'bulk_template'
-                );
+                $template = EmailTemplate::where('user_id', Auth::id())
+                    ->where('type', 'bulk_template')
+                    ->where('is_active', true)
+                    ->where(function ($q) {
+                        $q->where('body_template', 'like', '%{price}%')
+                          ->orWhere('subject_template', 'like', '%{price}%');
+                    })
+                    ->inRandomOrder()
+                    ->first();
+
+                if (!$template) {
+                    $template = EmailTemplate::getRandomByType(
+                        userId: Auth::id(),
+                        type: 'bulk_template'
+                    );
+                }
 
                 if (!$template) continue;
 

@@ -341,12 +341,11 @@ async function loadCampaign() {
               <th class="text-left py-3.5 px-4 text-[11px] font-semibold text-zinc-500 uppercase tracking-wider">Status</th>
               <th class="text-left py-3.5 px-4 text-[11px] font-semibold text-zinc-500 uppercase tracking-wider">Follow-ups</th>
               <th class="text-left py-3.5 px-4 text-[11px] font-semibold text-zinc-500 uppercase tracking-wider">Sends at</th>
-              <th class="text-left py-3.5 px-4 text-[11px] font-semibold text-zinc-500 uppercase tracking-wider">Account</th>
               <th class="text-right py-3.5 px-4 text-[11px] font-semibold text-zinc-500 uppercase tracking-wider">Action</th>
             </tr>
           </thead>
           <tbody id="emailsBody">
-            ${renderEmails(c.emails)}
+            ${renderEmailsGrouped(c.emails)}
           </tbody>
         </table>
       </div>
@@ -434,26 +433,60 @@ function filterBtn(filter, label, count) {
     </button>`;
 }
 
-function renderEmails(emails) {
+function renderEmailsGrouped(emails) {
   if (!emails.length) {
-    return `<tr><td colspan="8" class="text-center py-10 text-zinc-500 text-sm">No prospects found</td></tr>`;
+    return `<tr><td colspan="7" class="text-center py-10 text-zinc-500 text-sm">No prospects found</td></tr>`;
   }
-  return emails.map(e => `
-    <tr class="border-b border-white/[0.04] hover:bg-white/[0.03] transition">
-      <td class="py-3.5 px-4 text-zinc-200 font-semibold text-sm">${e.to_email}</td>
-      <td class="py-3.5 px-4 text-zinc-400 text-sm">${e.first_name || '—'}</td>
-      <td class="py-3.5 px-4 text-zinc-400 text-sm">${e.company_name || '—'}</td>
-      <td class="py-3.5 px-4"><span class="${emailStatusClass(e)}">${emailStatusLabel(e)}</span></td>
-      <td class="py-3.5 px-4 text-zinc-500 text-sm">${e.follow_up_count}</td>
-      <td class="py-3.5 px-4 text-zinc-600 text-xs">${e.sent_at ? fmtDate(e.sent_at) : (e.scheduled_at ? fmtDate(e.scheduled_at) : '—')}</td>
-      <td class="py-3.5 px-4 text-zinc-600 text-xs truncate max-w-[140px]">${e.gmail_account || '—'}</td>
-      <td class="py-3.5 px-4 text-right">
-        <button onclick="event.stopPropagation(); deleteProspect(${e.id}, '${e.to_email.replace(/'/g, "\\'")}')"
-                class="text-zinc-600 hover:text-red-400 transition text-lg leading-none font-bold p-1"
-                title="Remove this prospect">×</button>
-      </td>
-    </tr>
-  `).join('');
+
+  const groups = {};
+  emails.forEach(e => {
+    const key = e.gmail_account || 'unassigned';
+    (groups[key] = groups[key] || []).push(e);
+  });
+
+  return Object.entries(groups).map(([account, list]) => {
+    const sent    = list.filter(e => e.status === 'sent').length;
+    const pct     = Math.round((sent / list.length) * 100);
+
+    return `
+      <tr class="bg-white/[0.03] border-b border-white/[0.08]">
+        <td colspan="7" class="py-3 px-4">
+          <div class="flex items-center justify-between gap-4">
+            <div class="flex items-center gap-2.5 min-w-0">
+              <span class="w-2 h-2 rounded-full ${pct === 100 ? 'bg-emerald-500' : 'bg-[#7c6ef7]'} shrink-0"></span>
+              <span class="text-[#a78bfa] font-bold text-sm truncate">${account}</span>
+              <span class="text-xs text-zinc-500 shrink-0">${sent} / ${list.length} sent</span>
+            </div>
+            <div class="flex items-center gap-3 flex-1 max-w-xs ml-4">
+              <div class="flex-1 bg-white/5 rounded-full h-2 overflow-hidden">
+                <div class="h-2 rounded-full ${pct === 100 ? 'bg-emerald-500' : 'bg-[#7c6ef7]'} transition-all" style="width:${pct}%"></div>
+              </div>
+              <span class="text-xs font-semibold ${pct === 100 ? 'text-emerald-400' : 'text-zinc-400'} shrink-0">${pct}%</span>
+            </div>
+          </div>
+        </td>
+      </tr>
+      ${list.map(e => `
+        <tr class="border-b border-white/[0.04] hover:bg-white/[0.03] transition">
+          <td class="py-3.5 px-4 text-zinc-200 font-semibold text-sm">${e.to_email}</td>
+          <td class="py-3.5 px-4 text-zinc-400 text-sm">${e.first_name || '—'}</td>
+          <td class="py-3.5 px-4 text-zinc-400 text-sm">${e.company_name || '—'}</td>
+          <td class="py-3.5 px-4"><span class="${emailStatusClass(e)}">${emailStatusLabel(e)}</span></td>
+          <td class="py-3.5 px-4 text-zinc-500 text-sm">${e.follow_up_count}</td>
+          <td class="py-3.5 px-4 text-zinc-600 text-xs">${e.sent_at ? fmtDate(e.sent_at) : (e.scheduled_at ? fmtDate(e.scheduled_at) : '—')}</td>
+          <td class="py-3.5 px-4 text-right">
+            <button onclick="event.stopPropagation(); deleteProspect(${e.id}, '${e.to_email.replace(/'/g, "\\'")}')"
+                    class="text-zinc-600 hover:text-red-400 transition text-lg leading-none font-bold p-1"
+                    title="Remove this prospect">×</button>
+          </td>
+        </tr>
+      `).join('')}
+    `;
+  }).join('');
+}
+
+function renderEmails(emails) {
+  return renderEmailsGrouped(emails);
 }
 
 async function deleteProspect(id, email) {

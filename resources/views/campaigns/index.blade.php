@@ -52,11 +52,11 @@
                  class="w-full bg-[#0e0e14] border border-white/10 rounded-xl px-3.5 py-2.5 text-sm text-zinc-200 placeholder-zinc-600 outline-none focus:border-[#7c6ef7]/60 focus:ring-1 focus:ring-[#7c6ef7]/30 transition">
         </div>
 
-        <div id="campPriceWrapper" class="hidden">
+        <div id="campPriceWrapper">
           <label class="block text-sm font-medium text-zinc-300 mb-1.5">
             Price
             <span class="ml-1.5 text-[11px] font-medium text-amber-400 bg-amber-500/10 border border-amber-500/25 rounded-full px-2 py-0.5">
-              required by template
+              needed for the email
             </span>
           </label>
           <input type="text" id="campPrice" placeholder="$2,499"
@@ -171,16 +171,7 @@ document.addEventListener('DOMContentLoaded', () => {
 // ── Show modal ──
 async function showModal() {
   document.getElementById('createModal').classList.remove('hidden');
-
-  const res          = await apiGet('/api/templates/check-price-var?type=bulk_template');
-  const priceWrapper = document.getElementById('campPriceWrapper');
-
-  if (res.has_price_var) {
-    priceWrapper.classList.remove('hidden');
-  } else {
-    priceWrapper.classList.add('hidden');
-    document.getElementById('campPrice').value = '';
-  }
+  document.getElementById('campPriceWrapper').classList.remove('hidden');
 }
 
 // ── Hide modal and reset everything ──
@@ -484,9 +475,9 @@ async function createCampaign() {
   const facebookLinks = getLinks('facebook');
   const websiteLinks  = getLinks('website');
 
-  const priceRequired = !document.getElementById('campPriceWrapper').classList.contains('hidden');
+  const priceRequired = true; // price is needed in the campaign email
 
-  if (!name || !domain || !yourName || !recipients || (priceRequired && !price)) {
+  if (!name || !domain || !yourName || !price || !recipients) {
     toast('Error', 'Please fill all required fields', 'error'); return;
   }
   if (!accounts.length) {
