@@ -91,12 +91,18 @@ function applyFollowUpStatus() {
 }
 
 async function loadCampaign() {
-  const res = await apiGet(`/api/campaigns/${CAMPAIGN_ID}`);
+  let res;
+  try {
+    res = await apiGet(`/api/campaigns/${CAMPAIGN_ID}`);
+  } catch (e) {
+    res = { success: false, error: 'Network or server error: ' + e.message };
+  }
 
   if (!res.success) {
     document.getElementById('campaignDetail').innerHTML = `
       <div class="bg-[#121218] border border-white/[0.06] rounded-3xl p-14 text-center">
         <p class="text-zinc-400 mb-5">Campaign not found</p>
+        ${res.error ? `<p class="text-xs text-red-400 mb-5 font-mono">${res.error}</p>` : ''}
         <a href="{{ route('campaigns.index') }}"
            class="inline-flex items-center px-5 py-2.5 bg-[#7c6ef7] text-white text-sm font-semibold rounded-xl hover:bg-[#8d80f9] transition">
           ← Back

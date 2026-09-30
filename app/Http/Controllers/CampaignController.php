@@ -57,14 +57,36 @@ class CampaignController extends Controller
     // ============================================================
     public function show($id)
     {
+        try {
+            return $this->showCampaign($id);
+        } catch (\Throwable $e) {
+            Log::error('Campaign show failed', [
+                'campaign' => $id,
+                'error'    => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'error'   => 'Server error loading campaign: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    private function showCampaign($id)
+    {
         $campaign = Campaign::where('user_id', Auth::id())
             ->with(['emails.gmailAccount', 'gmailAccounts'])
             ->findOrFail($id);
 
-        $scheduled = DB::table('oban_jobs')
-            ->whereIn('state', ['available', 'scheduled', 'executing'])
-            ->whereNotNull('scheduled_at')
-            ->pluck('scheduled_at', DB::raw("(args->>'campaign_email_id')::int"));
+        try {
+            $scheduled = DB::table('oban_jobs')
+                ->whereIn('state', ['available', 'scheduled', 'executing'])
+                ->whereNotNull('scheduled_at')
+                ->pluck('scheduled_at', DB::raw("(args->>'campaign_email_id')::int"));
+        } catch (\Throwable $e) {
+            Log::warning('oban_jobs lookup failed', ['error' => $e->getMessage()]);
+            $scheduled = collect();
+        }
 
         $emails = $campaign->emails->map(function ($email) use ($scheduled) {
             return [
@@ -88,25 +110,29 @@ class CampaignController extends Controller
 
         // Estimate when each pending email will actually go out, based on the
         // random spacing between emails queued in the same batch.
-        $pending = $emails->filter(fn ($e) => $e['status'] === 'pending' && $e['scheduled_at'])->values();
-        if ($pending->isNotEmpty()) {
-            $times = $pending->pluck('scheduled_at')->map(fn ($t) => \Illuminate\Support\Carbon::parse($t));
-            $gaps = $times->sort()->values();
-            $spans = [];
-            for ($i = 1; $i < $gaps->count(); $i++) {
-                $spans[] = $gaps[$i]->diffInMinutes($gaps[$i - 1]);
+        $avgGap = null;
+        try {
+            $pending = $emails->filter(fn ($e) => $e['status'] === 'pending' && $e['scheduled_at'])->values();
+            if ($pending->isNotEmpty()) {
+                $times = $pending->pluck('scheduled_at')->map(fn ($t) => \Illuminate\Support\Carbon::parse($t));
+                $gaps = $times->sort()->values();
+                $spans = [];
+                for ($i = 1; $i < $gaps->count(); $i++) {
+                    $spans[] = $gaps[$i]->diffInMinutes($gaps[$i - 1]);
+                }
+                $avgGapMin   = $spans ? (int) round(array_sum($spans) / count($spans)) : 0;
+                $firstAt     = $gaps->first();
+                $lastAt      = $gaps->last();
+                $estSeconds  = $lastAt->diffInSeconds($firstAt);
+                $avgGap = [
+                    'minutes'         => $avgGapMin,
+                    'first_send_at'   => $firstAt->toIso8601String(),
+                    'last_send_at'    => $lastAt->toIso8601String(),
+                    'est_total_hours' => round($estSeconds / 3600, 2),
+                ];
             }
-            $avgGapMin   = $spans ? (int) round(array_sum($spans) / count($spans)) : 0;
-            $firstAt     = $gaps->first();
-            $lastAt      = $gaps->last();
-            $estSeconds  = $lastAt->diffInSeconds($firstAt);
-            $avgGap = [
-                'minutes'         => $avgGapMin,
-                'first_send_at'   => $firstAt->toIso8601String(),
-                'last_send_at'    => $lastAt->toIso8601String(),
-                'est_total_hours' => round($estSeconds / 3600, 2),
-            ];
-        } else {
+        } catch (\Throwable $e) {
+            Log::warning('avg_gap calc failed', ['error' => $e->getMessage()]);
             $avgGap = null;
         }
 
